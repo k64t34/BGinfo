@@ -1,0 +1,11 @@
+*.bak
+/.vs/* 
+/LockScreenBGinfo/obj/*
+/LockScreenBGinfo/bin/*
+/LockScreenBGinfo/.vs/*
+/DesktopBGinfo/obj/*
+/DesktopBGinfo/bin/*
+/DesktopBGinfo/.vs/*
+
+
+

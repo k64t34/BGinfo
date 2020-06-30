@@ -1,0 +1,69 @@
+Режимы работы:
+
+1. Установка
+2. LockScreen Image
+3. Desktop wallpaper
+
+Режимы работы определяются автоматически
+
+При определнии, что ОС загрузилась в Safemode - выход
+При определнии запущенного процесса - выход
+
+1. Установка
+Условие 
+	1. Наличие процесса explorer
+	2. Запуск из сессии пользователя с правами администраотра в режиме RunAs 	
+		
+Действия 
+	+-1.Скопировать программу,исходный образ  в %ProgramFiles%\TextOnLockScreen\ (=C:\Program Files)	
+	+2.Добавить/пересоздать запуск в реестре HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run		
+	T3.Добавить/пересоздать задание в планировщике или реестре HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunServices	
+	4.Узнать разрешение экрана	
+	5.Сообщение об успешной установки
+	
+
+2. LockScreen Image
+Условие 
+	1. Нет процесса explorer.exe
+Действия
+	1. Сравнить hostname, разрешение экрана, и при изменении пересоздать файл LockScreen Image в %windir%\System32\oobe\info\backgrounds  (=C:\Windows)
+	2. Настройка реестра SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP
+	
+3. Desktop wallpaper
+Условие 
+	1. Есть процесс explorer.exe
+	2. Запущено не из desktop
+Действия
+	1. Обновить файл в кэше
+	2. Обновить desktop
+	
+	
+Все о Автозагрузке Windows 10	https://g-ek.com/startup-windows-10	
+
+
+Кэш текущих обоев ползователя https://superuser.com/questions/966650/path-to-current-desktop-backgrounds-in-windows-10
+C:\Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg 
+
+
+// The current wallpaper path is stored in the registry at HKEY_CURRENT_USER\\Control Panel\\Desktop\\WallPaper
+RegistryKey rkWallPaper = Registry.CurrentUser.OpenSubKey("Control Panel\\Desktop", false);
+string WallpaperPath = rkWallPaper.GetValue("WallPaper").ToString();
+rkWallPaper.Close();
+// Return the current wallpaper path
+return WallpaperPath;
+
+https://social.msdn.microsoft.com/Forums/windows/en-US/234e2c53-3233-46e9-b81a-856fb6cb1d61/getset-desktop-wallpaper-in-windows-7?forum=winforms
+Set WallPaper:
+private static readonly UInt32 SPI_SETDESKWALLPAPER = 0x14;
+private static readonly UInt32 SPIF_UPDATEINIFILE = 0x01;
+private static readonly UInt32 SPIF_SENDWININICHANGE = 0x02;
+SystemParametersInfo(SPI_SETDESKWALLPAPER, 3, path, SPIF_SENDWININICHANGE | SPIF_UPDATEINIFILE)
+Get WallPaper:
+getting the name is tricky, registry trick doesnt always do the job, so the only way i found is to open a stream to read
+\AppData\Roaming\Microsoft\Windows\Themes\TranscodedWallpaper.jpg
+Which in turn will return the correct bytes for the wallpaper.
+
+
+How to set wallpaper JPEG quality reduction in Windows 10 ( default 85)
+HKEY_CURRENT_USER\Control Panel\Desktop
+Create a new 32-bit DWORD value here called JPEGImportQuality
