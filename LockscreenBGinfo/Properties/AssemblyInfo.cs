@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Управление общими сведениями о сборке осуществляется посредством следующего 
 // набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
 // общие сведения об этой сборке.
-[assembly: AssemblyTitle("DesktopBGinfo")]
-[assembly: AssemblyDescription("DesktopBGinfo")]
+[assembly: AssemblyTitle("LockscreenBGinfo")]
+[assembly: AssemblyDescription("LockscreenBGinfo")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("DesktopBGinfo.Properties")]
+[assembly: AssemblyProduct("LockscreenBGinfo")]
 [assembly: AssemblyCopyright("Skorik")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("89edbec8-d331-45c2-a581-2100ce4cd204")]
+[assembly: Guid("09764f83-fcbd-4d04-9f66-afd989057313")]
 
 // Сведения о версии сборки состоят из следующих четырех значений:
 //

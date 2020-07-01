@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Win32;
+using System.Windows;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -10,7 +11,7 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.ComponentModel;
 
-namespace BGInfo
+namespace LockscreenBGInfo
 {
     class Program
     {
