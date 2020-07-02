@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 namespace BGInfo
 {
-    class Program
+    public class BGInfo
     {
         static int ScreenHeight, ScreenWidth;
         static String ErrorTxt;
@@ -27,13 +27,13 @@ namespace BGInfo
             graphics.Dispose();
             return result;
         }
-        static bool EditBGImage(string ImageFile)
+        public static bool EditBGImage(string ImageFile)
         {
             bool result = true;
             if (!File.Exists(ImageFile)) { result = false; ErrorTxt = "Исходный файл не найден\n" + ImageFile; return result; };
             return result;
         }
-        static bool CopyBGImage(string FileFrom, string FileTo)
+        public static bool CopyBGImage(string FileFrom, string FileTo)
         {
             bool result = true;
             if (String.Compare(FileFrom, FileTo, true) == 0) return (EditBGImage(FileFrom));
@@ -50,7 +50,7 @@ namespace BGInfo
             graphics.Dispose();
             return result;
         }
-        static bool BGImage(Graphics graphics)
+        public static bool BGImage(Graphics graphics)
         {
             //https://docs.microsoft.com/en-us/dotnet/framework/winforms/advanced/how-to-align-drawn-text               
             int xPosText = 10;

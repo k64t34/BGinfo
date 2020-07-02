@@ -3,13 +3,12 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Win32;
-using System.Windows;
 using System.Windows.Forms;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Diagnostics;
 using System.Security.Principal;
-using System.ComponentModel;
+using BGInfo;
+
 
 namespace LockscreenBGInfo
 {
@@ -18,11 +17,12 @@ namespace LockscreenBGInfo
         //[STAThread]
         static String ErrorTxt;
         static String ScriptName;
-        static String hostName;
-        static int ScreenHeight, ScreenWidth;
+        const String ProjectName="BGInfo";
+        const String reg_ScreenWidth = "ScreenWidth";
+        const String reg_ScreenHright = "ScreenHeight";       
        
         static void ShowMessage() { ShowMessage(ErrorTxt);}
-        static void ShowMessage(string Text) { MessageBox.Show(Text, ScriptName, MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK,MessageBoxIcon.Error);}
         static void LogError() { }
         /// <summary>
         /// 
@@ -38,7 +38,10 @@ namespace LockscreenBGInfo
             RegistryKey reg;            
             String FolderOOBEBGImage = Environment.GetEnvironmentVariable("windir") + @"\System32\oobe\info\backgrounds\";
             string LockScreenImage = "LockScreenImage.jpg";
-            const String strCSPKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP";
+            const String regHKLM__CSPKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP\";
+            const String regHKLM__Run = @"Software\Microsoft\Windows\CurrentVersion\Run\";
+            String regHKLM__Project = @"Software\"+ ProjectName;            
+            const string DesktopScriptName = "DeskTopBGInfo.exe";
             String FileWallpaper;
             //SystemInformation.UserInteractive Значение true, если текущий процесс выполняется в интерактивном режиме. В противном случае — значение false.
             //SystemInformation.TerminalServerSession Значение true, если вызывающий процесс сопоставлен с клиентским сеансом служб терминалов. В противном случае — значение false.
@@ -49,14 +52,15 @@ namespace LockscreenBGInfo
             // **************************************************
             // Detect Mode
             // **************************************************
-            int ProgramMode; // 0 - Install, 1 - Boot, 2 - Desktop
+            int ProgramMode; // 0 - Install, 1 - Boot
             Proc = Process.GetProcessesByName("explorer");
-            if (Proc.Length == 0) 
+            if (Proc.Length == 0)
                 ProgramMode = 1;// boot
-            else if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) 
+            else if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
                 ProgramMode = 0;// install
             else
-                ProgramMode = 2;// desktop
+                return;
+           
             RegistryKey regHKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
 
             //https://stackoverflow.com/questions/2819934/detect-windows-version-in-net
@@ -70,7 +74,7 @@ namespace LockscreenBGInfo
             //}
             try // Get hostname
             {
-                hostName = Dns.GetHostName().ToUpper();
+                BGInfo.Info.hostName = Dns.GetHostName().ToUpper();
             }
             catch (SocketException e)
             {                
@@ -85,39 +89,69 @@ namespace LockscreenBGInfo
             // **************************************************
             if (ProgramMode == 0)
             {
-                //Copy program file to %ProgramFiles%\%ScriptName%
-                String ProgramFiles = Environment.GetEnvironmentVariable("ProgramFiles") + "\\" + ScriptName;
-                if (ProgramFiles != ScriptFolder)
+                //Copy program file to %ProgramFiles%\%ProjectName%
+                String ProgramFiles = Environment.GetEnvironmentVariable("ProgramFiles") + "\\" + ProjectName;
+                if (string.Compare(ProgramFiles, ScriptFolder, true) != 0)
                 {
-                    Directory.CreateDirectory(ProgramFiles);
-                    File.Copy(ScriptFullPathName, Path.Combine(ProgramFiles, ScriptName + ".exe"), true);                    
-                    if (File.Exists(Path.Combine(ScriptFolder, LockScreenImage))) 
-                    { 
-                        Directory.CreateDirectory(FolderOOBEBGImage);
-                        File.Copy(Path.Combine(ScriptFolder, LockScreenImage), Path.Combine(FolderOOBEBGImage, LockScreenImage), true);
+                    if (!Directory.Exists(ProgramFiles))
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(ProgramFiles);
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorTxt = e.ToString(); ShowMessage(); return;
+                        }
+                        if (!Directory.Exists(ProgramFiles)) { ErrorTxt = "Не удалось создать папку\n" + ProgramFiles; ShowMessage(); return; }
                     }
-                    ScriptFullPathName = Path.Combine(ProgramFiles, ScriptName + ".exe");
-                    if (!File.Exists(ScriptFullPathName))
-                    { ErrorTxt = "Не удалось скопировать файл \n" + ScriptFullPathName; ShowMessage(); return; }
+                    //TODO:Try
+                    File.Copy(ScriptFullPathName, Path.Combine(ProgramFiles, ScriptName + ".exe"), true);
                 }
+                if (!File.Exists(Path.Combine(ProgramFiles, DesktopScriptName)))
+                    if (File.Exists(Path.Combine(ScriptFolder, DesktopScriptName)))
+                    {
+                        try
+                        {
+                            File.Copy(Path.Combine(ScriptFolder, DesktopScriptName), Path.Combine(ProgramFiles, DesktopScriptName), true);
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorTxt = e.ToString(); ShowMessage(); return;
+                        }
+                        try
+                        {
+                            reg = regHKLM.CreateSubKey(regHKLM__Run, true);
+                            reg.SetValue(ProjectName, Path.Combine(ProgramFiles, DesktopScriptName), RegistryValueKind.String);
+                            if (reg.GetValue(ProjectName) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorTxt = e.ToString(); ShowMessage(); return;
+                        }
+                    }
+                if (File.Exists(Path.Combine(ScriptFolder, LockScreenImage))) 
+                { 
+                    Directory.CreateDirectory(FolderOOBEBGImage);
+                    File.Copy(Path.Combine(ScriptFolder, LockScreenImage), Path.Combine(FolderOOBEBGImage, LockScreenImage), true);
+                }
+                ScriptFullPathName = Path.Combine(ProgramFiles, ScriptName + ".exe");
+                if (!File.Exists(ScriptFullPathName))
+                { ErrorTxt = "Не удалось скопировать файл \n" + ScriptFullPathName; ShowMessage(); return; }
                 // Get Screen Resolution
                 // The Problem is get incorrect screen resolution if run from scheduler before logon
                 //ScreenHeight = Screen.PrimaryScreen.Bounds.Height;
                 //ScreenWidth = Screen.PrimaryScreen.Bounds.Width;
                 //int ScreenHeight = SystemInformation.PrimaryMonitorMaximizedWindowSize.Height;
                 //int ScreenWidth = SystemInformation.PrimaryMonitorMaximizedWindowSize.Width;
-                ScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
-                ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
+                BGInfo.Info.ScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
+                BGInfo.Info.ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
                 try
-                {                    
-                    reg = regHKLM.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
-                    reg.SetValue(ScriptName, ScriptFullPathName, RegistryValueKind.String);
-                    if (reg.GetValue(ScriptName) == null) { ErrorTxt = "Запись в реестр не удалась\n"+ reg.Name; ShowMessage(); return; }
-                        //Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", ScriptName, ScriptFullPathName, RegistryValueKind.String);
-                    reg = regHKLM.CreateSubKey(@"Software\" + ScriptName, true); //Компьютер\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BGInfo
-                    reg.SetValue("ScreenWidth", ScreenWidth, RegistryValueKind.String);
+                {
+                    reg = regHKLM.CreateSubKey(regHKLM__Project, true);                    
+                    reg.SetValue("ScreenWidth", BGInfo.Info.ScreenWidth, RegistryValueKind.String);
                     if (reg.GetValue("ScreenWidth") == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
-                    reg.SetValue("ScreenHeight", ScreenHeight, RegistryValueKind.String);
+                    reg.SetValue("ScreenHeight", BGInfo.Info.ScreenHeight, RegistryValueKind.String);
                     if (reg.GetValue("ScreenHeight") == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                 }
                 catch (Exception e)
@@ -136,7 +170,7 @@ namespace LockscreenBGInfo
                 //StandardOutputEncoding
                 startInfo.FileName = Environment.GetEnvironmentVariable("windir") + @"\System32\SCHTASKS.exe";
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                startInfo.Arguments = "/create /SC ONSTART /TN "+ ScriptName + " /TR  \"" +ScriptFullPathName +"\" /F /NP /RL HIGHEST";                
+                startInfo.Arguments = "/create /SC ONSTART /TN "+ ProjectName + " /TR  \"" +ScriptFullPathName +"\" /F /NP /RL HIGHEST";                
                 try 
                 {
                     using (Process exeProcess = Process.Start(startInfo))
@@ -159,9 +193,9 @@ namespace LockscreenBGInfo
             {
                 try //read screen resolution from registry
                 {
-                    reg = regHKLM.CreateSubKey(@"Software\" + ScriptName, true);
-                    ScreenWidth = Int32.Parse((string)reg.GetValue("ScreenWidth", "1920"));
-                    ScreenHeight = Int32.Parse((string)reg.GetValue("ScreenHeight", "1080"));
+                    reg = regHKLM.CreateSubKey(regHKLM__Project, true);
+                    BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue("ScreenWidth", "1920"));
+                    BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue("ScreenHeight", "1080"));
                 }
                 catch (Exception e)
                 {
@@ -181,8 +215,7 @@ namespace LockscreenBGInfo
                     if (!Directory.Exists(FolderOOBEBGImage)) return;
                 }
                 // Generate name for wallpaper file
-                FileWallpaper = hostName + "-" + ScreenWidth + "x" + ScreenHeight + ".jpg";
-                FileWallpaper = FolderOOBEBGImage + FileWallpaper;
+                FileWallpaper = FolderOOBEBGImage + BGInfo.Info.hostName + "-" + BGInfo.Info.ScreenWidth + "x" + BGInfo.Info.ScreenHeight + ".jpg";                
                 // Generate name for wallpaper file
                 //
 #if DEBUG
@@ -195,18 +228,18 @@ namespace LockscreenBGInfo
                     bool resultBGImage = false;
                     if (File.Exists(LockScreenImage))
                     {
-                        resultBGImage = CopyBGImage(LockScreenImage, FileWallpaper);                        
+                        resultBGImage = BGInfo.Image.Copy(LockScreenImage, FileWallpaper);                        
                     }
                     else
                     {
                         //if wallpaper  пусто, то взять какой цвет заливки HKEY_CURRENT_USER\Control Panel\Colors\Background  reg_sz 216 81 113
-                        resultBGImage = CreateBGImage(LockScreenImage, ColorTranslator.FromHtml("#FF004080"));
+                        resultBGImage = BGInfo.Image.Create(FileWallpaper, ColorTranslator.FromHtml("#FF004080"));
                     }
-                    if (!resultBGImage) { ErrorTxt = "Ну удалось создать новый файл изображения\n" + LockScreenImage + "\n" + ErrorTxt; if (ProgramMode == 0) ShowMessage(); else LogError(); return; }
+                    if (!resultBGImage) { ErrorTxt = "Ну удалось создать новый файл изображения\n" + FileWallpaper + "\n" + ErrorTxt; if (ProgramMode == 0) ShowMessage(); else LogError(); return; }
                     
                     try
                     {
-                        reg = regHKLM.CreateSubKey(strCSPKey, true);
+                        reg = regHKLM.CreateSubKey(regHKLM__CSPKey, true);
                         reg.SetValue("LockScreenImagePath", FileWallpaper, RegistryValueKind.String);
                         reg.SetValue("LockScreenImageUrl", FileWallpaper, RegistryValueKind.String);
                         reg.SetValue("LockScreenImageStatus", 1, RegistryValueKind.DWord);
@@ -217,7 +250,7 @@ namespace LockscreenBGInfo
                     }
                 }
             }            
-            if (ProgramMode == 0)MessageBox.Show("Установка прошла успешно", ScriptName, MessageBoxButtons.OK, MessageBoxIcon.Information);            
+            if (ProgramMode == 0)MessageBox.Show("Установка "+ ScriptName + " прошла успешно", ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Information);            
         }
         
         
@@ -226,3 +259,4 @@ namespace LockscreenBGInfo
     
 
 }
+
