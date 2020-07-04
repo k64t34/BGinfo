@@ -21,8 +21,13 @@
 
 ### Действия LockscreenBGinfo.exe при загрузки ОС:
 1. Создает файл для отображения на экране блокировки. Имя файла имеет формат -x.jpg
-2. Изменяет в разделе реестра HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP параметры:     LockScreenImagePath
-LockScreenImageUrl LockScreenImageStatus
+2. Изменяет в разделе реестра HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP параметры:
+
+  LockScreenImagePath
+
+  LockScreenImageUrl
+
+  LockScreenImageStatus
 
 ### Действия DesktopBGinfo.exe:
 1. Находит кэш текущих обоев в папке и %APPDATA%\Microsoft\Windows\Themes\ (\Users<User name>\AppData\Roaming\Microsoft\Windows\Themes\ и добавляет имя хоста
