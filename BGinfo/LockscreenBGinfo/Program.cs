@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
+//using System.Net;
+//using System.Net.Sockets;
 using Microsoft.Win32;
 using System.Windows.Forms;
-using System.Drawing;
 using System.Diagnostics;
 using System.Security.Principal;
 using BGInfo;
+
 
 
 namespace LockscreenBGInfo
@@ -17,14 +17,15 @@ namespace LockscreenBGInfo
         //[STAThread]
         static String ErrorTxt;
         static String ScriptName;
-        const String ProjectName="BGInfo";
+        const String ProjectName = "BGInfo";
         const String reg_ScreenWidth = "ScreenWidth";
-        const String reg_ScreenHright = "ScreenHeight";       
-       
-        static void ShowMessage() { ShowMessage(ErrorTxt);}
-        static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK,MessageBoxIcon.Error);}
-        static void LogError() {LogError(ErrorTxt);}            
-        static void LogError(string Text) {
+        const String reg_ScreenHright = "ScreenHeight";
+
+        static void ShowMessage() { ShowMessage(ErrorTxt); }
+        static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        static void LogError() { LogError(ErrorTxt); }
+        static void LogError(string Text)
+        {
             using (EventLog eventLog = new EventLog("Application"))
             {
                 eventLog.Source = ScriptName;
@@ -36,19 +37,19 @@ namespace LockscreenBGInfo
         /// </summary>
         static void Main()
         {
-            if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;            
+            if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;
             String ScriptFullPathName = Application.ExecutablePath;
-            ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);            
+            ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
             Process[] SelfProc = Process.GetProcessesByName(ScriptName);
             if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting			
             String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
-            RegistryKey reg;            
+            RegistryKey reg;
             String FolderOOBEBGImage = Environment.GetEnvironmentVariable("windir") + @"\System32\oobe\info\backgrounds\";
             string LockScreenImage = "LockScreenImage.jpg";
-			const string DesktopScriptName = "DeskTopBGInfo.exe";
+            const string DesktopScriptName = "DeskTopBGInfo.exe";
             const String regHKLM__CSPKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP\";
             const String regHKLM__Run = @"Software\Microsoft\Windows\CurrentVersion\Run\";
-            String regHKLM__Project = @"Software\"+ ProjectName;            
+            String regHKLM__Project = @"Software\" + ProjectName;
             String FileWallpaper;
             //SystemInformation.UserInteractive Значение true, если текущий процесс выполняется в интерактивном режиме. В противном случае — значение false.
             //SystemInformation.TerminalServerSession Значение true, если вызывающий процесс сопоставлен с клиентским сеансом служб терминалов. В противном случае — значение false.
@@ -60,13 +61,13 @@ namespace LockscreenBGInfo
             // Detect Mode
             // **************************************************
             int ProgramMode; // 0 - Install, 1 - Boot
-            SelfProc = Process.GetProcessesByName("explorer");            
-                if (SelfProc.Length == 0)
-                    ProgramMode = 1;// boot
-                else if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
-                    ProgramMode = 0;// install
-                else
-                    return;            
+            SelfProc = Process.GetProcessesByName("explorer");
+            if (SelfProc.Length == 0)
+                ProgramMode = 1;// boot
+            else if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                ProgramMode = 0;// install
+            else
+                return;
             RegistryKey regHKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
 
             //https://stackoverflow.com/questions/2819934/detect-windows-version-in-net
@@ -80,12 +81,14 @@ namespace LockscreenBGInfo
             //}
             try // Get hostname
             {
-                BGInfo.Info.hostName = Dns.GetHostName().ToUpper();
+                //BGInfo.Info.hostName = Dns.GetHostName().ToUpper();
+                BGInfo.Info.hostName = Environment.GetEnvironmentVariable("COMPUTERNAME");
+
             }
-            catch (SocketException e)
-            {                
+            /*catch (SocketException e)
+            {
                 ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;
-            }
+            }*/
             catch (Exception e)
             {
                 ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;
@@ -153,7 +156,7 @@ namespace LockscreenBGInfo
                 catch (Exception e)
                 {
                     ErrorTxt = e.ToString(); ShowMessage(); return;
-                }                
+                }
                 #region Sheduler
                 // Add task to Sheduler SCHTASKS / create / SC ONSTART / TN BGInfo / TR  "C:\Program Files\LockScreenWallpaper\LockScreenWallpaper.exe" / F / NP / RL HIGHEST 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -188,7 +191,7 @@ namespace LockscreenBGInfo
                 if (File.Exists(FileWallpaper))
                 {
                     try { File.Delete(FileWallpaper); }
-                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage("Не удалось удалить файл\n" + FileWallpaper + "\n Возможна неправильная работа приложения. Удалите указанный файл вручную и запустите заново\n"+ e.ToString()); }
+                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage("Не удалось удалить файл\n" + FileWallpaper + "\n Возможна неправильная работа приложения. Удалите указанный файл вручную и запустите заново\n" + e.ToString()); }
                 }
             }
             // **************************************************
@@ -209,8 +212,8 @@ namespace LockscreenBGInfo
                 // Check wallpaper folder
                 if (!Directory.Exists(FolderOOBEBGImage))
                 {
-                    try{Directory.CreateDirectory(FolderOOBEBGImage);                    }
-                    catch (Exception e){ErrorTxt = e.ToString(); if (ProgramMode == 0) ShowMessage(); else LogError(); return;                    }
+                    try { Directory.CreateDirectory(FolderOOBEBGImage); }
+                    catch (Exception e) { ErrorTxt = e.ToString(); if (ProgramMode == 0) ShowMessage(); else LogError(); return; }
                     if (!Directory.Exists(FolderOOBEBGImage)) return;
                 }
                 // Generate name for wallpaper file
@@ -223,19 +226,19 @@ namespace LockscreenBGInfo
                 if (!File.Exists(FileWallpaper))
 #endif
                 { // Create new file from origin or blank
-                    LockScreenImage = Path.Combine(FolderOOBEBGImage, LockScreenImage);                    
+                    LockScreenImage = Path.Combine(FolderOOBEBGImage, LockScreenImage);
                     bool resultBGImage = false;
                     if (File.Exists(LockScreenImage))
                     {
-                        resultBGImage = BGInfo.Image.Copy(LockScreenImage, FileWallpaper);                        
+                        resultBGImage = BGInfo.Image.Copy(LockScreenImage, FileWallpaper);
                     }
                     else
                     {
                         //if wallpaper  пусто, то взять какой цвет заливки HKEY_CURRENT_USER\Control Panel\Colors\Background  reg_sz 216 81 113
-                        resultBGImage = BGInfo.Image.Create(FileWallpaper, ColorTranslator.FromHtml("#FF004080"));
+                        resultBGImage = BGInfo.Image.Create(FileWallpaper);
                     }
                     if (!resultBGImage) { ErrorTxt = "Ну удалось создать новый файл изображения\n" + FileWallpaper + "\n" + ErrorTxt; if (ProgramMode == 0) ShowMessage(); else LogError(); return; }
-                    
+
                     try
                     {
                         const string reg_LockScreenImagePath = "LockScreenImagePath";
@@ -253,14 +256,14 @@ namespace LockscreenBGInfo
                         ErrorTxt = e.ToString(); if (ProgramMode == 0) ShowMessage(); else LogError(); return;
                     }
                 }
-            }            
-            if (ProgramMode == 0)MessageBox.Show("Установка "+ ScriptName + " прошла успешно", ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Information);            
+            }
+            if (ProgramMode == 0) MessageBox.Show("Установка " + ScriptName + " прошла успешно", ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        
-        
+
+
 
     }
-    
+
 
 }
 

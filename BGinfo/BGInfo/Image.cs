@@ -1,15 +1,10 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Imaging;
 namespace BGInfo
 {
-    public  class Info
-    {
-        public static String hostName;
-        public static int ScreenHeight, ScreenWidth;
-    }
     public static class Image
     {
         private static ImageCodecInfo GetEncoder(ImageFormat format)//https://docs.microsoft.com/ru-ru/dotnet/framework/winforms/advanced/how-to-set-jpeg-compression-level
@@ -24,8 +19,9 @@ namespace BGInfo
             }
             return null;
         }
+        public static bool Create(string ImageFile) { return Create(ImageFile, ColorTranslator.FromHtml("#FF004080")); }
         public static bool Create(string ImageFile, Color BGColor)
-        {
+        {            
             bool result = true;
             Bitmap Img;
             Graphics graphics;
@@ -34,7 +30,7 @@ namespace BGInfo
             //for (int w=0;w!=ScreenWidth;w++) for (int h = 0; h != ScreenHeight; h++) Img.SetPixel(w,h,Color.DarkBlue);
             graphics = Graphics.FromImage(Img);
             graphics.Clear(BGColor);
-            if (BGImage(graphics)) result = Save(ImageFile, Img);            
+            if (BGImage(graphics)) result = Save(ImageFile, Img);
             Img.Dispose();
             graphics.Dispose();
             return result;
@@ -66,10 +62,10 @@ namespace BGInfo
             Bitmap Img;
             Graphics graphics;
             try { Img = new Bitmap(FileFrom); } catch (Exception e) { result = false; /*ErrorTxt = e.Message;*/ return result; }
-            
+
             if (Img.Width != Info.ScreenWidth || Img.Height != Info.ScreenHeight) // Расчитано что исходный файл оч маленький и ВСЕГДА увеличиваетя размер холста
             {
-                Color FirstPixel=Img.GetPixel(0,0);
+                Color FirstPixel = Img.GetPixel(0, 0);
                 Img.Dispose();
                 Img = new Bitmap(Info.ScreenWidth, Info.ScreenHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
                 graphics = Graphics.FromImage(Img);
@@ -82,7 +78,7 @@ namespace BGInfo
             {
                 graphics = Graphics.FromImage(Img);
             }
-            if (BGImage(graphics)) result=Save(FileTo, Img);
+            if (BGImage(graphics)) result = Save(FileTo, Img);
             Img.Dispose();
             graphics.Dispose();
             return result;

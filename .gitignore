@@ -1,11 +1,13 @@
 *.bak
-/.vs/* 
-/LockscreenBGinfo/obj/*
-/LockscreenBGinfo/bin/*
-/LockscreenBGinfo/.vs/*
-/DesktopBGinfo/obj/*
-/DesktopBGinfo/bin/*
-/DesktopBGinfo/.vs/*
+/BGinfo/obj/*
+/BGinfo/bin/*
+/BGinfo/.vs/*
+/BGinfo/LockscreenBGinfo/obj/*
+/BGinfo/LockscreenBGinfo/bin/*
+/BGinfo/DesktopBGinfo/obj/*
+/BGinfo/DesktopBGinfo/bin/*
+/BGinfo/BGInfo/obj/*
+/BGinfo/BGInfo/bin/*
 Thumbs.db
 
 

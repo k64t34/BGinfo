@@ -1,14 +1,10 @@
 ﻿using System;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using Microsoft.Win32;
 using System.Windows.Forms;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.Diagnostics;
-using System.Security.Principal;
-using System.ComponentModel;
+using System.Drawing;
+using BGInfo;
 
 namespace DesktopBGinfo
 {
@@ -19,96 +15,38 @@ namespace DesktopBGinfo
         static String ScriptName;
         static String hostName;
         static int ScreenHeight, ScreenWidth;
-        static bool  CreateBGImage(string ImageFile,Color BGColor)
+        const String ProjectName = "BGInfo";
+        const String reg_ScreenWidth = "ScreenWidth";
+        const String reg_ScreenHright = "ScreenHeight";
+        static void LogError(string Text)
         {
-            bool result = true;
-            Bitmap Img;
-            Graphics graphics;
-            //TODO:Try
-            Img = new Bitmap(ScreenWidth, ScreenHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            //for (int w=0;w!=ScreenWidth;w++) for (int h = 0; h != ScreenHeight; h++) Img.SetPixel(w,h,Color.DarkBlue);
-            graphics = Graphics.FromImage(Img);
-            graphics.Clear(BGColor);
-            BGImage(graphics);
-            try { Img.Save(ImageFile, System.Drawing.Imaging.ImageFormat.Jpeg); } catch (Exception e) { ErrorTxt = e.ToString(); result = false; }
-            Img.Dispose();
-            graphics.Dispose();
-            return result;
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                eventLog.Source = ScriptName;
+                eventLog.WriteEntry(Text, EventLogEntryType.Error);
+            }
         }
-        static bool EditBGImage(string ImageFile)
-        {
-            bool result = true;
-            if (!File.Exists(ImageFile)) { result = false; ErrorTxt = "Исходный файл не найден\n" + ImageFile; return result; };
-            return result;
-        }
-        static bool CopyBGImage(string FileFrom, string FileTo)
-        {
-            bool result = true;
-            if (String.Compare(FileFrom,FileTo,true)==0) return (EditBGImage(FileFrom));
-            if (!File.Exists(FileFrom) ){ result = false; ErrorTxt = "Исходный файл не найден\n" + FileFrom;return result; };
-            if (File.Exists(FileTo)){ try { File.Delete(FileTo); } catch (Exception e) { result = false; ErrorTxt = e.Message; return result; } }
-            Bitmap Img;
-            Graphics graphics;
-            try { Img = new Bitmap(FileFrom); } catch (Exception e) { result = false; ErrorTxt = e.Message; return result; }
-            graphics = Graphics.FromImage(Img);
-            //TODO: Resize origin image to real resolution            
-            BGImage(graphics);
-            try{Img.Save(FileTo, System.Drawing.Imaging.ImageFormat.Jpeg);}catch(Exception e){ErrorTxt=e.ToString();result = false;}
-            Img.Dispose();
-            graphics.Dispose();
-            return result;
-        }
-        static bool BGImage(Graphics graphics)
-        {
-            //https://docs.microsoft.com/en-us/dotnet/framework/winforms/advanced/how-to-align-drawn-text               
-            int xPosText = 10;
-            int yPosText = 10;
-            Font font1 = new Font("Arial", 72, FontStyle.Bold, GraphicsUnit.Point);
-            Rectangle rect1 = new Rectangle(ScreenWidth / 2, yPosText, (ScreenWidth - xPosText) / 2, (ScreenHeight - yPosText) / 4);
-            TextFormatFlags flags = TextFormatFlags.Right;
-            //https://docs.microsoft.com/en-us/dotnet/api/system.windows.forms.textrenderer.drawtext?view=netframework-4.8#System_Windows_Forms_TextRenderer_DrawText_System_Drawing_IDeviceContext_System_String_System_Drawing_Font_System_Drawing_Rectangle_System_Drawing_Color_System_Windows_Forms_TextFormatFlags_
-            System.Windows.Forms.TextRenderer.DrawText(graphics, hostName, font1, rect1,
-                    System.Drawing.Color.White, flags);
-            // Draw the text and the surrounding rectangle.
-            //graphics.DrawString(hostName, font1, Brushes.White, rect1, stringFormat);
-            //graphics.DrawRectangle(Pens.Black, rect1);
-
-            /*graphics.DrawString(hostName, drawFont, Brushes.Black, xPosText-1, yPosText-1);
-                            StringFormat stringFormat = new StringFormat();
-            stringFormat.Alignment = StringAlignment.Center;
-            stringFormat.LineAlignment = StringAlignment.Center;  
-            graphics.DrawString(hostName, drawFont, Brushes.Black, xPosText+1, yPosText+1);
-            graphics.DrawString(hostName, drawFont, Brushes.Black, xPosText-1, yPosText);
-            graphics.DrawString(hostName, drawFont, Brushes.Black, xPosText+1, yPosText);
-            graphics.DrawString(hostName, drawFont, Brushes.White, xPosText, yPosText);*/
-            return true;
-        }
-        static void ShowMessage() { ShowMessage(ErrorTxt);}
-        static void ShowMessage(string Text) { MessageBox.Show(Text, ScriptName, MessageBoxButtons.OK,MessageBoxIcon.Error);}
-        static void LogError() { }
         /// <summary>
         /// 
         /// </summary>
         static void Main()
         {
-            if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;            
+            if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;
             String ScriptFullPathName = Application.ExecutablePath;
-            ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);            
-            Process[] Proc = Process.GetProcessesByName(ScriptName);
-            if (Proc.Length > 1) return; // if current exist running the same instance of program, then exiting
+            ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
+            Process[] SelfProc = Process.GetProcessesByName(ScriptName);
+            if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting
             String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
-            RegistryKey reg;            
-            String FolderOOBEBGImage = Environment.GetEnvironmentVariable("windir") + @"\System32\oobe\info\backgrounds\";
-            string LockScreenImage = "LockScreenImage.jpg";
-            const String strCSPKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP";
+            RegistryKey reg;
             String FileWallpaper;
+            string regHKLM__Project = @"Software\" + ProjectName;
             //SystemInformation.UserInteractive Значение true, если текущий процесс выполняется в интерактивном режиме. В противном случае — значение false.
             //SystemInformation.TerminalServerSession Значение true, если вызывающий процесс сопоставлен с клиентским сеансом служб терминалов. В противном случае — значение false.
             //SystemInformation.ComputerName Имя этого компьютера.
             //SystemInformation.UserDomainName Возвращает имя домена, которому принадлежит пользователь.
             //System.DirectoryServices.ActiveDirectory Получает объект Domain для действующих учетных данных текущего пользователя для контекста безопасности, в котором выполняется приложение.
             //Domain.GetComputerDomain Есть нюансы https://docs.microsoft.com/ru-ru/dotnet/api/system.directoryservices.activedirectory.domain.getcomputerdomain?view=dotnet-plat-ext-3.1
-            // **************************************************
+            /*// **************************************************
             // Detect Mode
             // **************************************************
             int ProgramMode; // 0 - Install, 1 - Boot, 2 - Desktop
@@ -312,70 +250,63 @@ namespace DesktopBGinfo
                         if (ProgramMode == 0) ShowMessage(); else LogError(); 
                         return;
                     }*/
-                    // set registry value
-                    try
-                    {
-                        reg = regHKLM.CreateSubKey(strCSPKey, true);
-                        reg.SetValue("LockScreenImagePath", FileWallpaper, RegistryValueKind.String);
-                        reg.SetValue("LockScreenImageUrl", FileWallpaper, RegistryValueKind.String);
-                        reg.SetValue("LockScreenImageStatus", 1, RegistryValueKind.DWord);
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorTxt = e.ToString(); if (ProgramMode == 0) ShowMessage(); else LogError(); return;
-                    }
-                }               
 
-            }
-            // **************************************************
-            // Desktop
-            // **************************************************
-            if (ProgramMode == 2 || ProgramMode == 0)
+
+            ScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
+            ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
+            RegistryKey regHKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+            try //read screen resolution from registry
             {
-                ScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
-                ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
-                reg = regHKLM.CreateSubKey(@"Software\" + ScriptName, true);
-                int cScreenWidth  = Int32.Parse((string)reg.GetValue("ScreenWidth" , "1920"));
-                int cScreenHeight = Int32.Parse((string)reg.GetValue("ScreenHeight", "1080"));
-                if (cScreenWidth != ScreenWidth) reg.SetValue("ScreenWidth", ScreenWidth, RegistryValueKind.String);
-                if (cScreenHeight != ScreenHeight) reg.SetValue("ScreenHeight", ScreenHeight, RegistryValueKind.String);
-                //Windows 10 -C:\Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg 
-                //Windows7  - C:\Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\TranscodedWallpaper.jpg
-                //APPDATA=C:\Users\Andrew\AppData\Roaming
-                //COMPUTERNAME=M16
-                //USERDOMAIN = M16
-                //USERNAME = Andrew
-                //USERPROFILE = C:\Users\Andrew
-                reg = Registry.CurrentUser.CreateSubKey(@"Control Panel\Desktop", true);
-                //В windows7 Как ни парадоксально в параметре wallpaper путь к C: \Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\TranscodedWallpaper.jpg
-
-                FileWallpaper= (string)reg.GetValue("WallPaper", "");
-                string newFileWallpaper = Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\TranscodedWallpaper";
-                bool resultBGImage = false;
-                if (String.IsNullOrEmpty(FileWallpaper))
-                {
-                    reg = Registry.CurrentUser.OpenSubKey(@"Control Panel\Colors", true);
-                    String strBGcolor = (string)reg.GetValue("Background", "0 0 0");
-                    char[] spaceSeparator = new char[] { ' ' };
-                    string[] tmpt = strBGcolor.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
-                    Int32[] tmptINTS = Array.ConvertAll(tmpt, new Converter<string, int>(int.Parse));
-                    Color colorBG = Color.FromArgb(tmptINTS[0], tmptINTS[1], tmptINTS[2]);
-                    resultBGImage =CreateBGImage(newFileWallpaper, colorBG);                    
-                }
-                else
-                {                
-                    resultBGImage=CopyBGImage(FileWallpaper, newFileWallpaper);
-                }
-                if (!resultBGImage) { ErrorTxt = "Ну удалось создать новый файл изображения\n"+ newFileWallpaper+"\n"+ ErrorTxt; if (ProgramMode == 0) ShowMessage(); else LogError(); return; }
-                //FileWallpaper = Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\TranscodedWallpaper.jpg";                                }
-                //Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg";
+                reg = regHKLM.CreateSubKey(regHKLM__Project, true);
+                BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue(reg_ScreenWidth, "1920"));
+                BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue(reg_ScreenHright, "1080"));
             }
-            if (ProgramMode == 0)MessageBox.Show("Установка прошла успешно", ScriptName, MessageBoxButtons.OK, MessageBoxIcon.Information);            
+            catch (Exception e)
+            {
+                LogError(e.ToString()); return;
+            }
+            reg = regHKLM.CreateSubKey(@"Software\" + ScriptName, true);
+            int cScreenWidth = Int32.Parse((string)reg.GetValue("ScreenWidth", "1920"));
+            int cScreenHeight = Int32.Parse((string)reg.GetValue("ScreenHeight", "1080"));
+            if (cScreenWidth != ScreenWidth) reg.SetValue("ScreenWidth", ScreenWidth, RegistryValueKind.String);
+            if (cScreenHeight != ScreenHeight) reg.SetValue("ScreenHeight", ScreenHeight, RegistryValueKind.String);
+            //Windows 10 -C:\Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg 
+            //Windows7  - C:\Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\TranscodedWallpaper.jpg
+            //APPDATA=C:\Users\Andrew\AppData\Roaming
+            //COMPUTERNAME=M16
+            //USERDOMAIN = M16
+            //USERNAME = Andrew
+            //USERPROFILE = C:\Users\Andrew
+            reg = Registry.CurrentUser.CreateSubKey(@"Control Panel\Desktop", true);
+            //В windows7 Как ни парадоксально в параметре wallpaper путь к C: \Users\Andrew\AppData\Roaming\Microsoft\Windows\Themes\TranscodedWallpaper.jpg
+
+            FileWallpaper = (string)reg.GetValue("WallPaper", "");
+            string newFileWallpaper = Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\TranscodedWallpaper";
+            bool resultBGImage = false;
+            if (String.IsNullOrEmpty(FileWallpaper))
+            {
+                reg = Registry.CurrentUser.OpenSubKey(@"Control Panel\Colors", true);
+                String strBGcolor = (string)reg.GetValue("Background", "0 0 0");
+                char[] spaceSeparator = new char[] { ' ' };
+                string[] tmpt = strBGcolor.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
+                Int32[] tmptINTS = Array.ConvertAll(tmpt, new Converter<string, int>(int.Parse));
+                Color colorBG = Color.FromArgb(tmptINTS[0], tmptINTS[1], tmptINTS[2]);
+                resultBGImage = BGInfo.Image.Create(newFileWallpaper, colorBG);
+            }
+            else
+            {
+                resultBGImage = BGInfo.Image.Copy(FileWallpaper, newFileWallpaper);
+            }
+            if (!resultBGImage) { LogError("Не удалось создать новый файл изображения\n" + newFileWallpaper + "\n"); return; }
+            //FileWallpaper = Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\TranscodedWallpaper.jpg";                                }
+            //Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg";
+
+
         }
-        
-        
+
+
 
     }
-    
+
 
 }
