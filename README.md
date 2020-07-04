@@ -26,3 +26,4 @@
 
 Действия DesktopBGinfo.exe:
 1.Находит кэш текущих обоев в папке и %APPDATA%\Microsoft\Windows\Themes\  (\Users\<User name>\AppData\Roaming\Microsoft\Windows\Themes\ и добавляет имя хоста
+
