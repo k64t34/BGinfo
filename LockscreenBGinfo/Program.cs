@@ -23,7 +23,14 @@ namespace LockscreenBGInfo
        
         static void ShowMessage() { ShowMessage(ErrorTxt);}
         static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK,MessageBoxIcon.Error);}
-        static void LogError() { }
+        static void LogError() {LogError(ErrorTxt);}            
+        static void LogError(string Text) {
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                eventLog.Source = ScriptName;
+                eventLog.WriteEntry(Text, EventLogEntryType.Error);
+            }
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -32,16 +39,16 @@ namespace LockscreenBGInfo
             if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;            
             String ScriptFullPathName = Application.ExecutablePath;
             ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);            
-            Process[] Proc = Process.GetProcessesByName(ScriptName);
-            if (Proc.Length > 1) return; // if current exist running the same instance of program, then exiting
+            Process[] SelfProc = Process.GetProcessesByName(ScriptName);
+            if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting			
             String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
             RegistryKey reg;            
             String FolderOOBEBGImage = Environment.GetEnvironmentVariable("windir") + @"\System32\oobe\info\backgrounds\";
             string LockScreenImage = "LockScreenImage.jpg";
+			const string DesktopScriptName = "DeskTopBGInfo.exe";
             const String regHKLM__CSPKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP\";
             const String regHKLM__Run = @"Software\Microsoft\Windows\CurrentVersion\Run\";
             String regHKLM__Project = @"Software\"+ ProjectName;            
-            const string DesktopScriptName = "DeskTopBGInfo.exe";
             String FileWallpaper;
             //SystemInformation.UserInteractive Значение true, если текущий процесс выполняется в интерактивном режиме. В противном случае — значение false.
             //SystemInformation.TerminalServerSession Значение true, если вызывающий процесс сопоставлен с клиентским сеансом служб терминалов. В противном случае — значение false.
@@ -53,14 +60,13 @@ namespace LockscreenBGInfo
             // Detect Mode
             // **************************************************
             int ProgramMode; // 0 - Install, 1 - Boot
-            Proc = Process.GetProcessesByName("explorer");
-            if (Proc.Length == 0)
-                ProgramMode = 1;// boot
-            else if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
-                ProgramMode = 0;// install
-            else
-                return;
-           
+            SelfProc = Process.GetProcessesByName("explorer");            
+                if (SelfProc.Length == 0)
+                    ProgramMode = 1;// boot
+                else if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    ProgramMode = 0;// install
+                else
+                    return;            
             RegistryKey regHKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
 
             //https://stackoverflow.com/questions/2819934/detect-windows-version-in-net
@@ -89,55 +95,45 @@ namespace LockscreenBGInfo
             // **************************************************
             if (ProgramMode == 0)
             {
-                //Copy program file to %ProgramFiles%\%ProjectName%
+                //Copy program LockscreenBGinfofile to %ProgramFiles%\%ProjectName%
                 String ProgramFiles = Environment.GetEnvironmentVariable("ProgramFiles") + "\\" + ProjectName;
                 if (string.Compare(ProgramFiles, ScriptFolder, true) != 0)
                 {
                     if (!Directory.Exists(ProgramFiles))
                     {
-                        try
-                        {
-                            Directory.CreateDirectory(ProgramFiles);
-                        }
-                        catch (Exception e)
-                        {
-                            ErrorTxt = e.ToString(); ShowMessage(); return;
-                        }
+                        try { Directory.CreateDirectory(ProgramFiles); }
+                        catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
                         if (!Directory.Exists(ProgramFiles)) { ErrorTxt = "Не удалось создать папку\n" + ProgramFiles; ShowMessage(); return; }
                     }
-                    //TODO:Try
-                    File.Copy(ScriptFullPathName, Path.Combine(ProgramFiles, ScriptName + ".exe"), true);
+                    try { File.Copy(ScriptFullPathName, Path.Combine(ProgramFiles, ScriptName + ".exe"), true); }
+                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
+                    if (!File.Exists(Path.Combine(ProgramFiles, ScriptName + ".exe"))) { ShowMessage("Не удалось скопировать файл \n" + ScriptFullPathName + " в папку " + ProgramFiles); return; }
                 }
+                //Copy program DesktopBGinfo file to %ProgramFiles%\%ProjectName%
                 if (!File.Exists(Path.Combine(ProgramFiles, DesktopScriptName)))
                     if (File.Exists(Path.Combine(ScriptFolder, DesktopScriptName)))
                     {
-                        try
-                        {
-                            File.Copy(Path.Combine(ScriptFolder, DesktopScriptName), Path.Combine(ProgramFiles, DesktopScriptName), true);
-                        }
-                        catch (Exception e)
-                        {
-                            ErrorTxt = e.ToString(); ShowMessage(); return;
-                        }
+                        try { File.Copy(Path.Combine(ScriptFolder, DesktopScriptName), Path.Combine(ProgramFiles, DesktopScriptName), true); }
+                        catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
                         try
                         {
                             reg = regHKLM.CreateSubKey(regHKLM__Run, true);
                             reg.SetValue(ProjectName, Path.Combine(ProgramFiles, DesktopScriptName), RegistryValueKind.String);
                             if (reg.GetValue(ProjectName) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                         }
-                        catch (Exception e)
-                        {
-                            ErrorTxt = e.ToString(); ShowMessage(); return;
-                        }
+                        catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
                     }
-                if (File.Exists(Path.Combine(ScriptFolder, LockScreenImage))) 
-                { 
-                    Directory.CreateDirectory(FolderOOBEBGImage);
-                    File.Copy(Path.Combine(ScriptFolder, LockScreenImage), Path.Combine(FolderOOBEBGImage, LockScreenImage), true);
+                //Copy image LockScreenImage file to \windows\system32\OOBE\info\backgroud
+                if (File.Exists(Path.Combine(ScriptFolder, LockScreenImage)))
+                {
+                    try { Directory.CreateDirectory(FolderOOBEBGImage); }
+                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
+                    if (!Directory.Exists(FolderOOBEBGImage)) { ErrorTxt = "Не удалось создать папку\n" + FolderOOBEBGImage; ShowMessage(); return; }
+                    try { File.Copy(Path.Combine(ScriptFolder, LockScreenImage), Path.Combine(FolderOOBEBGImage, LockScreenImage), true); }
+                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
+                    if (!File.Exists(Path.Combine(FolderOOBEBGImage, LockScreenImage))) { ShowMessage("Не удалось скопировать файл \n" + LockScreenImage + " в папку " + FolderOOBEBGImage); return; }
                 }
                 ScriptFullPathName = Path.Combine(ProgramFiles, ScriptName + ".exe");
-                if (!File.Exists(ScriptFullPathName))
-                { ErrorTxt = "Не удалось скопировать файл \n" + ScriptFullPathName; ShowMessage(); return; }
                 // Get Screen Resolution
                 // The Problem is get incorrect screen resolution if run from scheduler before logon
                 //ScreenHeight = Screen.PrimaryScreen.Bounds.Height;
@@ -148,16 +144,17 @@ namespace LockscreenBGInfo
                 BGInfo.Info.ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
                 try
                 {
-                    reg = regHKLM.CreateSubKey(regHKLM__Project, true);                    
-                    reg.SetValue("ScreenWidth", BGInfo.Info.ScreenWidth, RegistryValueKind.String);
-                    if (reg.GetValue("ScreenWidth") == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
-                    reg.SetValue("ScreenHeight", BGInfo.Info.ScreenHeight, RegistryValueKind.String);
-                    if (reg.GetValue("ScreenHeight") == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg = regHKLM.CreateSubKey(regHKLM__Project, true);
+                    reg.SetValue(reg_ScreenWidth, BGInfo.Info.ScreenWidth, RegistryValueKind.String);
+                    if (reg.GetValue(reg_ScreenWidth) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(reg_ScreenHright, BGInfo.Info.ScreenHeight, RegistryValueKind.String);
+                    if (reg.GetValue(reg_ScreenHright) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                 }
                 catch (Exception e)
                 {
                     ErrorTxt = e.ToString(); ShowMessage(); return;
                 }
+                #region Sheduler
                 // Add task to Sheduler SCHTASKS / create / SC ONSTART / TN BGInfo / TR  "C:\Program Files\LockScreenWallpaper\LockScreenWallpaper.exe" / F / NP / RL HIGHEST 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.CreateNoWindow = true;
@@ -170,14 +167,14 @@ namespace LockscreenBGInfo
                 //StandardOutputEncoding
                 startInfo.FileName = Environment.GetEnvironmentVariable("windir") + @"\System32\SCHTASKS.exe";
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                startInfo.Arguments = "/create /SC ONSTART /TN "+ ProjectName + " /TR  \"" +ScriptFullPathName +"\" /F /NP /RL HIGHEST";                
-                try 
+                startInfo.Arguments = "/create /SC ONSTART /TN " + ProjectName + " /TR  \"" + ScriptFullPathName + "\" /F /NP /RL HIGHEST";
+                try
                 {
                     using (Process exeProcess = Process.Start(startInfo))
                     {
                         exeProcess.WaitForExit();
-                        if (exeProcess.ExitCode!=0) { ErrorTxt = "Ошибка при созаднии задания "+ ScriptName + " в планировщике \n" + startInfo.FileName + "\n"+startInfo.Arguments ; ShowMessage(); return; }
-                    }                    
+                        if (exeProcess.ExitCode != 0) { ErrorTxt = "Ошибка при созаднии задания " + ScriptName + " в планировщике \n" + startInfo.FileName + "\n" + startInfo.Arguments; ShowMessage(); return; }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -185,6 +182,7 @@ namespace LockscreenBGInfo
                 }
                 //TODO:Check that task is realy exist in scheduler
                 //SCHTASKS.exe /query /tn bginfo | echo % ERRORLEVEL %
+                #endregion
             }
             // **************************************************
             // On Boot
@@ -194,8 +192,8 @@ namespace LockscreenBGInfo
                 try //read screen resolution from registry
                 {
                     reg = regHKLM.CreateSubKey(regHKLM__Project, true);
-                    BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue("ScreenWidth", "1920"));
-                    BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue("ScreenHeight", "1080"));
+                    BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue(reg_ScreenWidth, "1920"));
+                    BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue(reg_ScreenHright, "1080"));
                 }
                 catch (Exception e)
                 {
@@ -204,18 +202,12 @@ namespace LockscreenBGInfo
                 // Check wallpaper folder
                 if (!Directory.Exists(FolderOOBEBGImage))
                 {
-                    try
-                    {
-                        Directory.CreateDirectory(FolderOOBEBGImage);
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorTxt = e.ToString(); if (ProgramMode == 0) ShowMessage(); else LogError(); return;
-                    }
+                    try{Directory.CreateDirectory(FolderOOBEBGImage);                    }
+                    catch (Exception e){ErrorTxt = e.ToString(); if (ProgramMode == 0) ShowMessage(); else LogError(); return;                    }
                     if (!Directory.Exists(FolderOOBEBGImage)) return;
                 }
                 // Generate name for wallpaper file
-                FileWallpaper = FolderOOBEBGImage + BGInfo.Info.hostName + "-" + BGInfo.Info.ScreenWidth + "x" + BGInfo.Info.ScreenHeight + ".jpg";                
+                FileWallpaper = FolderOOBEBGImage + BGInfo.Info.hostName + "-" + BGInfo.Info.ScreenWidth + "x" + BGInfo.Info.ScreenHeight + ".jpg";
                 // Generate name for wallpaper file
                 //
 #if DEBUG
@@ -224,7 +216,7 @@ namespace LockscreenBGInfo
                 if (!File.Exists(FileWallpaper))
 #endif
                 { // Create new file from origin or blank
-                    LockScreenImage = Path.Combine(FolderOOBEBGImage, LockScreenImage);
+                    LockScreenImage = Path.Combine(FolderOOBEBGImage, LockScreenImage);                    
                     bool resultBGImage = false;
                     if (File.Exists(LockScreenImage))
                     {
@@ -239,10 +231,15 @@ namespace LockscreenBGInfo
                     
                     try
                     {
+                        const string reg_LockScreenImagePath = "LockScreenImagePath";
                         reg = regHKLM.CreateSubKey(regHKLM__CSPKey, true);
-                        reg.SetValue("LockScreenImagePath", FileWallpaper, RegistryValueKind.String);
-                        reg.SetValue("LockScreenImageUrl", FileWallpaper, RegistryValueKind.String);
-                        reg.SetValue("LockScreenImageStatus", 1, RegistryValueKind.DWord);
+                        reg.SetValue(reg_LockScreenImagePath, FileWallpaper, RegistryValueKind.String);
+                        if (reg.GetValue(reg_LockScreenImagePath) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                        const string reg_LockScreenImageUrl = "LockScreenImageUrl";
+                        reg.SetValue(reg_LockScreenImageUrl, FileWallpaper, RegistryValueKind.String);
+                        if (reg.GetValue(reg_LockScreenImageUrl) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                        const string reg_LockScreenImageStatus = "LockScreenImageStatus";
+                        reg.SetValue(reg_LockScreenImageStatus, 1, RegistryValueKind.DWord);
                     }
                     catch (Exception e)
                     {
