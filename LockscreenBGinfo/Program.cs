@@ -107,7 +107,7 @@ namespace LockscreenBGInfo
                     }
                     try { File.Copy(ScriptFullPathName, Path.Combine(ProgramFiles, ScriptName + ".exe"), true); }
                     catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
-                    if (!File.Exists(Path.Combine(ProgramFiles, ScriptName + ".exe"))) { ShowMessage("Не удалось скопировать файл \n" + ScriptFullPathName + " в папку " + ProgramFiles); return; }
+                    if (!File.Exists(Path.Combine(ProgramFiles, ScriptName + ".exe"))) { ShowMessage("Не удалось скопировать файл \n" + ScriptFullPathName + "\nв папку\n" + ProgramFiles); return; }
                 }
                 //Copy program DesktopBGinfo file to %ProgramFiles%\%ProjectName%
                 if (!File.Exists(Path.Combine(ProgramFiles, DesktopScriptName)))
@@ -131,7 +131,7 @@ namespace LockscreenBGInfo
                     if (!Directory.Exists(FolderOOBEBGImage)) { ErrorTxt = "Не удалось создать папку\n" + FolderOOBEBGImage; ShowMessage(); return; }
                     try { File.Copy(Path.Combine(ScriptFolder, LockScreenImage), Path.Combine(FolderOOBEBGImage, LockScreenImage), true); }
                     catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
-                    if (!File.Exists(Path.Combine(FolderOOBEBGImage, LockScreenImage))) { ShowMessage("Не удалось скопировать файл \n" + LockScreenImage + " в папку " + FolderOOBEBGImage); return; }
+                    if (!File.Exists(Path.Combine(FolderOOBEBGImage, LockScreenImage))) { ShowMessage("Не удалось скопировать файл \n" + LockScreenImage + "\nв папку\n" + FolderOOBEBGImage); return; }
                 }
                 ScriptFullPathName = Path.Combine(ProgramFiles, ScriptName + ".exe");
                 // Get Screen Resolution
@@ -153,7 +153,7 @@ namespace LockscreenBGInfo
                 catch (Exception e)
                 {
                     ErrorTxt = e.ToString(); ShowMessage(); return;
-                }
+                }                
                 #region Sheduler
                 // Add task to Sheduler SCHTASKS / create / SC ONSTART / TN BGInfo / TR  "C:\Program Files\LockScreenWallpaper\LockScreenWallpaper.exe" / F / NP / RL HIGHEST 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -183,6 +183,13 @@ namespace LockscreenBGInfo
                 //TODO:Check that task is realy exist in scheduler
                 //SCHTASKS.exe /query /tn bginfo | echo % ERRORLEVEL %
                 #endregion
+                //Delete previos file if exist
+                FileWallpaper = FolderOOBEBGImage + BGInfo.Info.hostName + "-" + BGInfo.Info.ScreenWidth + "x" + BGInfo.Info.ScreenHeight + ".jpg";
+                if (File.Exists(FileWallpaper))
+                {
+                    try { File.Delete(FileWallpaper); }
+                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage("Не удалось удалить файл\n" + FileWallpaper + "\n Возможна неправильная работа приложения. Удалите указанный файл вручную и запустите заново\n"+ e.ToString()); }
+                }
             }
             // **************************************************
             // On Boot
