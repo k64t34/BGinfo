@@ -20,7 +20,7 @@
 5. Создает в разделе реестра HKEY_LOCAL_MACHINE\SOFTWARE\ раздел BGInfo для хранения конфигурации программы.
 
 ### Действия LockscreenBGinfo.exe при загрузки ОС:
-1. Создает файл для отображения на экране блокировки. Имя файла имеет формат -x.jpg
+1. Создает файл для отображения на экране блокировки. Имя файла имеет формат `<Hostname>-<Screen width>x<Screen Height>.jpg`
 2. Изменяет в разделе реестра HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP параметры:
 
   LockScreenImagePath
