@@ -6,6 +6,8 @@
 
 1. экране блокировки (приветсвия/ выбора пользователя/ ввода пароля);
 2. обоях пользователей.
+![Lock screen](https://github.com/k64t34/BGinfo/blob/master/FAQ/Example.LockScreen.jpg)
+![Lock screen](https://github.com/k64t34/BGinfo/blob/master/FAQ/Example.Desktoptop.jpg)
 
 ## Состоит из двух программ:
 **LockscreenBGinfo.exe** - программа для экрана блокировки и по совместительсту установщик пакета.
@@ -20,7 +22,11 @@
 5. Создает в разделе реестра `HKEY_LOCAL_MACHINE\SOFTWARE\` раздел BGInfo для хранения конфигурации программы.
 
 ### Действия LockscreenBGinfo.exe при загрузки ОС:
-1. Создает файл для отображения на экране блокировки. Имя файла имеет формат `<Hostname>-<Screen width>x<Screen Height>.jpg`
+1. Создает файл для отображения на экране блокировки. Имя файла имеет формат
+
+`<Hostname>-<Screen width>x<Screen Height>.jpg`
+
+
 2. Изменяет в разделе реестра `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP` параметры:
 
   LockScreenImagePath
@@ -31,3 +37,4 @@
 
 ### Действия DesktopBGinfo.exe:
 1. Находит кэш текущих обоев в папке и %APPDATA%\Microsoft\Windows\Themes\ (\Users<User name>\AppData\Roaming\Microsoft\Windows\Themes\ и добавляет имя хоста
+  
