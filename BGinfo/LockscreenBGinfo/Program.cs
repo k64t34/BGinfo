@@ -26,11 +26,18 @@ namespace LockscreenBGInfo
         static void LogError() { LogError(ErrorTxt); }
         static void LogError(string Text)
         {
-            using (EventLog eventLog = new EventLog("Application"))
+            const string LogName = "Application";
+            try
             {
-                eventLog.Source = ScriptName;
-                eventLog.WriteEntry(Text, EventLogEntryType.Error);
+                if (!EventLog.SourceExists(ScriptName))
+                    EventLog.CreateEventSource(ScriptName, LogName);
+                using (EventLog eventLog = new EventLog(LogName))
+                {
+                    eventLog.Source = ScriptName;
+                    eventLog.WriteEntry(Text, EventLogEntryType.Error);
+                }
             }
+            catch { }
         }
         /// <summary>
         /// 
@@ -112,7 +119,8 @@ namespace LockscreenBGInfo
                     catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
                     if (!File.Exists(Path.Combine(ProgramFiles, ScriptName + ".exe"))) { ShowMessage("Не удалось скопировать файл \n" + ScriptFullPathName + "\nв папку\n" + ProgramFiles); return; }
                 }
-                //Copy program DesktopBGinfo file to %ProgramFiles%\%ProjectName%
+                #region DesktopBGinfo.exe
+                //Copy program DesktopBGinfo.exe file to %ProgramFiles%\%ProjectName%
                 if (!File.Exists(Path.Combine(ProgramFiles, DesktopScriptName)))
                     if (File.Exists(Path.Combine(ScriptFolder, DesktopScriptName)))
                     {
@@ -125,7 +133,57 @@ namespace LockscreenBGInfo
                             if (reg.GetValue(ProjectName) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                         }
                         catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
+                        #region Sheduler
+                        // Add task to Sheduler SCHTASKS / create / SC ONSTART / TN BGInfo / TR  "C:\Program Files\LockScreenWallpaper\LockScreenWallpaper.exe" / F / NP / RL HIGHEST 
+                        ProcessStartInfo startInfo = new ProcessStartInfo();
+                        startInfo.CreateNoWindow = true;
+                        startInfo.UseShellExecute = false;
+                        //RedirectStandardError
+                        //RedirectStandardInput
+                        //RedirectStandardOutput
+                        //StandardErrorEncoding
+                        //StandardInputEncoding
+                        //StandardOutputEncoding
+                        startInfo.FileName = Environment.GetEnvironmentVariable("windir") + @"\System32\SCHTASKS.exe";
+                        startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        startInfo.Arguments = "/create /SC ONSTART /TN " + ProjectName + " /TR  \"" + ScriptFullPathName + "\" /F /NP /RL HIGHEST";
+                        try
+                        {
+                            using (Process exeProcess = Process.Start(startInfo))
+                            {
+                                exeProcess.WaitForExit();
+                                if (exeProcess.ExitCode != 0) { ErrorTxt = "Ошибка при созаднии задания " + ScriptName + " в планировщике \n" + startInfo.FileName + "\n" + startInfo.Arguments; ShowMessage(); return; }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorTxt = e.ToString(); ShowMessage(); return;
+                        }
+
+                        //TODO:Check that task is realy exist in scheduler
+                        //SCHTASKS.exe /query /tn bginfo | echo % ERRORLEVEL %
+                        #endregion
+                        #region Run DesktopBGinfo.exe
+                        //Run DesktopBGinfo.exe                                                
+                        startInfo = new ProcessStartInfo();
+                        startInfo.CreateNoWindow = true;
+                        startInfo.UseShellExecute = false;
+                        startInfo.FileName = Path.Combine(ProgramFiles, DesktopScriptName);                            
+                        startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        try
+                        {
+                            using (Process exeProcess = Process.Start(startInfo))
+                            {
+                                exeProcess.WaitForExit();
+                                if (exeProcess.ExitCode != 0) { ErrorTxt = "Ошибка запуска " + DesktopScriptName + "\n" + exeProcess.ExitCode.ToString();ShowMessage();  }
+                            }
+                        }
+                        catch (Exception e)
+                        { { ErrorTxt = "Ошибка запуска " + DesktopScriptName + "\n" + e.Message; ShowMessage(); } }
+
+                        #endregion
                     }
+#endregion
                 //Copy image LockScreenImage file to \windows\system32\OOBE\info\backgroud
                 if (File.Exists(Path.Combine(ScriptFolder, LockScreenImage)))
                 {
@@ -157,42 +215,10 @@ namespace LockscreenBGInfo
                 {
                     ErrorTxt = e.ToString(); ShowMessage(); return;
                 }
-                #region Sheduler
-                // Add task to Sheduler SCHTASKS / create / SC ONSTART / TN BGInfo / TR  "C:\Program Files\LockScreenWallpaper\LockScreenWallpaper.exe" / F / NP / RL HIGHEST 
-                ProcessStartInfo startInfo = new ProcessStartInfo();
-                startInfo.CreateNoWindow = true;
-                startInfo.UseShellExecute = false;
-                //RedirectStandardError
-                //RedirectStandardInput
-                //RedirectStandardOutput
-                //StandardErrorEncoding
-                //StandardInputEncoding
-                //StandardOutputEncoding
-                startInfo.FileName = Environment.GetEnvironmentVariable("windir") + @"\System32\SCHTASKS.exe";
-                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                startInfo.Arguments = "/create /SC ONSTART /TN " + ProjectName + " /TR  \"" + ScriptFullPathName + "\" /F /NP /RL HIGHEST";
-                try
-                {
-                    using (Process exeProcess = Process.Start(startInfo))
-                    {
-                        exeProcess.WaitForExit();
-                        if (exeProcess.ExitCode != 0) { ErrorTxt = "Ошибка при созаднии задания " + ScriptName + " в планировщике \n" + startInfo.FileName + "\n" + startInfo.Arguments; ShowMessage(); return; }
-                    }
-                }
-                catch (Exception e)
-                {
-                    ErrorTxt = e.ToString(); ShowMessage(); return;
-                }
-                //TODO:Check that task is realy exist in scheduler
-                //SCHTASKS.exe /query /tn bginfo | echo % ERRORLEVEL %
-                #endregion
+   
                 //Delete previos file if exist
                 FileWallpaper = FolderOOBEBGImage + BGInfo.Info.hostName + "-" + BGInfo.Info.ScreenWidth + "x" + BGInfo.Info.ScreenHeight + ".jpg";
-                if (File.Exists(FileWallpaper))
-                {
-                    try { File.Delete(FileWallpaper); }
-                    catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage("Не удалось удалить файл\n" + FileWallpaper + "\n Возможна неправильная работа приложения. Удалите указанный файл вручную и запустите заново\n" + e.ToString()); }
-                }
+               
             }
             // **************************************************
             // On Boot
@@ -259,11 +285,6 @@ namespace LockscreenBGInfo
             }
             if (ProgramMode == 0) MessageBox.Show("Установка " + ScriptName + " прошла успешно", ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-
-
-
     }
-
-
 }
 

@@ -50,7 +50,8 @@ namespace BGInfo
             EncoderParameters myEncoderParameters = new EncoderParameters(1);
             EncoderParameter myEncoderParameter = new EncoderParameter(myEncoder, 100L);
             myEncoderParameters.Param[0] = myEncoderParameter;
-            try { Img.Save(ImageFile, jpgEncoder, myEncoderParameters); } catch (Exception e) { /*ErrorTxt = e.ToString();*/ result = false; }
+            try { Img.Save(ImageFile, jpgEncoder, myEncoderParameters); }
+            catch /*(Exception e)*/ { /*ErrorTxt = e.ToString();*/ result = false; }
             return result;
         }
         public static bool Copy(string FileFrom, string FileTo)
@@ -58,10 +59,10 @@ namespace BGInfo
             bool result = true;
             if (String.Compare(FileFrom, FileTo, true) == 0) return (Edit(FileFrom));
             if (!File.Exists(FileFrom)) { result = false; /*ErrorTxt = "Исходный файл не найден\n" + FileFrom; */return result; };
-            if (File.Exists(FileTo)) { try { File.Delete(FileTo); } catch (Exception e) { result = false; /*ErrorTxt = e.Message;*/ return result; } }
+            if (File.Exists(FileTo)) { try { File.Delete(FileTo); } catch /*(Exception e)*/ { result = false; /*ErrorTxt = e.Message;*/ return result; } }
             Bitmap Img;
             Graphics graphics;
-            try { Img = new Bitmap(FileFrom); } catch (Exception e) { result = false; /*ErrorTxt = e.Message;*/ return result; }
+            try { Img = new Bitmap(FileFrom); } catch /*(Exception e)*/ { result = false; /*ErrorTxt = e.Message;*/ return result; }
 
             if (Img.Width != Info.ScreenWidth || Img.Height != Info.ScreenHeight) // Расчитано что исходный файл оч маленький и ВСЕГДА увеличиваетя размер холста
             {

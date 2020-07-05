@@ -18,11 +18,18 @@ namespace DesktopBGinfo
         
         static void LogError(string Text)
         {
-            using (EventLog eventLog = new EventLog("Application"))
+            const string LogName = "Application";
+            try
             {
-                eventLog.Source = ScriptName;
-                eventLog.WriteEntry(Text, EventLogEntryType.Error);
+                if (!EventLog.SourceExists(ScriptName))
+                    EventLog.CreateEventSource(ScriptName, LogName);
+                using (EventLog eventLog = new EventLog(LogName))
+                {
+                    eventLog.Source = ScriptName;
+                    eventLog.WriteEntry(Text, EventLogEntryType.Error);
+                }
             }
+            catch { }
         }
         /// <summary>
         /// 
@@ -33,7 +40,7 @@ namespace DesktopBGinfo
             String ScriptFullPathName = Application.ExecutablePath;
             ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
             #if DEBUG
-            LogError("Start " + ((DateTime)(DateTime.Now)).ToString());
+            LogError("Start debug" + ((DateTime)(DateTime.Now)).ToString());
             #endif
             Process[] SelfProc = Process.GetProcessesByName(ScriptName);
             if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting            
@@ -71,7 +78,7 @@ namespace DesktopBGinfo
             //USERDOMAIN =PCNAME or DOMAINNAME 
             //USERNAME = Username
             //USERPROFILE = C:\Users\<Username>            
-            try
+            /*try
             {
                 reg = Registry.CurrentUser.CreateSubKey(@"Control Panel\Desktop", true);
                 FileWallpaper = (string)reg.GetValue("WallPaper", "");
@@ -89,15 +96,27 @@ namespace DesktopBGinfo
                 string[] tmpt = strBGcolor.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
                 Int32[] tmptINTS = Array.ConvertAll(tmpt, new Converter<string, int>(int.Parse));
                 Color colorBG = Color.FromArgb(tmptINTS[0], tmptINTS[1], tmptINTS[2]);
+                //String FolderOOBEBGImage = Environment.GetEnvironmentVariable("windir") + @"\System32\oobe\info\backgrounds\";
+                //Path.GetTempFileName();
                 resultBGImage = BGInfo.Image.Create(newFileWallpaper, colorBG);
+                try
+                {
+
+                    reg = Registry.CurrentUser.CreateSubKey(@"Control Panel\Desktop", true);
+                    FileWallpaper = (string)reg.SetValue("WallPaper", "");
+                }
+
             }
             else
             {
-                resultBGImage = BGInfo.Image.Copy(FileWallpaper, newFileWallpaper);
+                resultBGImage = BGInfo.Image.Edit(newFileWallpaper);
             }
-            if (!resultBGImage) { LogError("Не удалось создать новый файл изображения\n" + newFileWallpaper + "\n"); return; }
+            if (!resultBGImage) { LogError("Не удалось создать новый файл изображения\n" + newFileWallpaper + "\n"); return; }*/
             //FileWallpaper = Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\TranscodedWallpaper.jpg";                                }
             //Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg";
+            #if DEBUG
+            LogError("Finish debug" + ((DateTime)(DateTime.Now)).ToString());
+            #endif
         }
     }
 }
