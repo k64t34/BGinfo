@@ -114,6 +114,9 @@ namespace DesktopBGinfo
             if (!resultBGImage) { LogError("Не удалось создать новый файл изображения\n" + newFileWallpaper + "\n"); return; }*/
             //FileWallpaper = Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\TranscodedWallpaper.jpg";                                }
             //Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg";
+            /*How to set wallpaper JPEG quality reduction in Windows 10 ( default 85)
+HKEY_CURRENT_USER\Control Panel\Desktop
+Create a new 32-bit DWORD value here called JPEGImportQuality*/
             #if DEBUG
             LogError("Finish debug" + ((DateTime)(DateTime.Now)).ToString());
             #endif
