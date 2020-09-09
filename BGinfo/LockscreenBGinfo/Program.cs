@@ -103,7 +103,7 @@ namespace LockscreenBGInfo
             // **************************************************
             // Installation
             // **************************************************
-            if (ProgramMode == 0)
+            if (ProgramMode == 0) //Install
             {
                 ProcessStartInfo startInfo;
                 #region LockscreenBGinfofile
@@ -120,8 +120,10 @@ namespace LockscreenBGInfo
                     try { File.Copy(ScriptFullPathName, Path.Combine(ProgramFiles, ScriptName + ".exe"), true); }
                     catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
                     if (!File.Exists(Path.Combine(ProgramFiles, ScriptName + ".exe"))) { ShowMessage("Не удалось скопировать файл \n" + ScriptFullPathName + "\nв папку\n" + ProgramFiles); return; }
+                    ScriptFullPathName = Path.Combine(ProgramFiles, ScriptName + ".exe");
                     #region Sheduler
                     // Add task to Sheduler SCHTASKS / create / SC ONSTART / TN BGInfo / TR  "C:\Program Files\LockScreenWallpaper\LockScreenWallpaper.exe" / F / NP / RL HIGHEST 
+
                     startInfo = new ProcessStartInfo();
                     startInfo.CreateNoWindow = true;
                     startInfo.UseShellExecute = false;
@@ -206,8 +208,7 @@ namespace LockscreenBGInfo
                     catch (Exception e) { ErrorTxt = e.ToString(); ShowMessage(); return; }
                     if (!File.Exists(Path.Combine(FolderOOBEBGImage, LockScreenImage))) { ShowMessage("Не удалось скопировать файл \n" + LockScreenImage + "\nв папку\n" + FolderOOBEBGImage); return; }
                 }
-                #endregion
-                ScriptFullPathName = Path.Combine(ProgramFiles, ScriptName + ".exe");
+                #endregion                
                 // Get Screen Resolution
                 // The Problem is get incorrect screen resolution if run from scheduler before logon
                 //ScreenHeight = Screen.PrimaryScreen.Bounds.Height;
@@ -236,7 +237,7 @@ namespace LockscreenBGInfo
             // **************************************************
             // On Boot
             // **************************************************
-            if (ProgramMode <= 1)
+            if (ProgramMode <= 1) //Boot
             {
                 try //read screen resolution from registry
                 {
