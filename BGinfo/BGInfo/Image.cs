@@ -87,14 +87,31 @@ namespace BGInfo
         public static bool BGImage(Graphics graphics)
         {
             //https://docs.microsoft.com/en-us/dotnet/framework/winforms/advanced/how-to-align-drawn-text               
+            //Draw hostName
             int xPosText = 10;
             int yPosText = 10;
             Font font1 = new Font("Arial", 72, FontStyle.Bold, GraphicsUnit.Point);
-            Rectangle rect1 = new Rectangle(Info.ScreenWidth / 2, yPosText, (Info.ScreenWidth - xPosText) / 2, (Info.ScreenHeight - yPosText) / 4);
-            TextFormatFlags flags = TextFormatFlags.Right;
+            Size proposedSize = new Size(int.MaxValue, int.MaxValue);
+            Size size = TextRenderer.MeasureText(Info.hostName, font1, proposedSize);
+            Rectangle rect1 = new Rectangle(Info.ScreenWidth / 2, yPosText, (Info.ScreenWidth - xPosText) / 2, size.Height/*(Info.ScreenHeight - yPosText) / 8*/);
+            TextFormatFlags flags = TextFormatFlags.HorizontalCenter;
+            //TextFormatFlags flags = TextFormatFlags.HorizontalCenter;
+            //TextFormatFlags.VerticalCenter;
             //https://docs.microsoft.com/en-us/dotnet/api/system.windows.forms.textrenderer.drawtext?view=netframework-4.8#System_Windows_Forms_TextRenderer_DrawText_System_Drawing_IDeviceContext_System_String_System_Drawing_Font_System_Drawing_Rectangle_System_Drawing_Color_System_Windows_Forms_TextFormatFlags_
             System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostName, font1, rect1,
                     System.Drawing.Color.White, flags);
+            //Draw hostDescription
+            xPosText = 10;
+            yPosText = 10 + rect1.Height;
+            font1 = new Font("Arial", 36, FontStyle.Bold, GraphicsUnit.Point);
+            proposedSize = new Size(int.MaxValue, int.MaxValue);
+            size = TextRenderer.MeasureText(Info.hostDescription, font1, proposedSize);
+            rect1 = new Rectangle(Info.ScreenWidth / 2, yPosText, (Info.ScreenWidth - xPosText) / 2, size.Height);
+            flags = TextFormatFlags.HorizontalCenter;
+            //https://docs.microsoft.com/en-us/dotnet/api/system.windows.forms.textrenderer.drawtext?view=netframework-4.8#System_Windows_Forms_TextRenderer_DrawText_System_Drawing_IDeviceContext_System_String_System_Drawing_Font_System_Drawing_Rectangle_System_Drawing_Color_System_Windows_Forms_TextFormatFlags_
+            System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostDescription, font1, rect1,
+                    System.Drawing.Color.LightGray, flags);
+
             // Draw the text and the surrounding rectangle.
             //graphics.DrawString(hostName, font1, Brushes.White, rect1, stringFormat);
             //graphics.DrawRectangle(Pens.Black, rect1);

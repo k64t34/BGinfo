@@ -20,6 +20,9 @@ namespace LockscreenBGInfo
         const String ProjectName = "BGInfo";
         const String reg_ScreenWidth = "ScreenWidth";
         const String reg_ScreenHright = "ScreenHeight";
+        const String reg_HostName = "Hostname";
+        const String reg_HostDescription = "Description";
+        const String reg_BGInfoversion = "version";
 
         static void ShowMessage() { ShowMessage(ErrorTxt); }
         static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
@@ -90,16 +93,18 @@ namespace LockscreenBGInfo
             {
                 //BGInfo.Info.hostName = Dns.GetHostName().ToUpper();
                 BGInfo.Info.hostName = Environment.GetEnvironmentVariable("COMPUTERNAME");
-
             }
             /*catch (SocketException e)
             {
                 ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;
             }*/
-            catch (Exception e)
-            {
-                ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;
-            }
+            catch (Exception e){ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;}
+            try {//Get Host description   HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters   srvcomment             
+                reg = regHKLM.CreateSubKey(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", true);
+                BGInfo.Info.hostDescription = ((string)reg.GetValue("srvcomment", ""));
+            }         
+            catch (Exception e){ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;}
+
             // **************************************************
             // Installation
             // **************************************************
@@ -224,6 +229,10 @@ namespace LockscreenBGInfo
                     if (reg.GetValue(reg_ScreenWidth) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                     reg.SetValue(reg_ScreenHright, BGInfo.Info.ScreenHeight, RegistryValueKind.String);
                     if (reg.GetValue(reg_ScreenHright) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(reg_HostName, BGInfo.Info.hostName, RegistryValueKind.String);
+                    if (reg.GetValue(reg_HostName) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(reg_HostDescription, BGInfo.Info.hostDescription, RegistryValueKind.String);
+                    if (reg.GetValue(reg_HostDescription) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                 }
                 catch (Exception e)
                 {
@@ -239,11 +248,13 @@ namespace LockscreenBGInfo
             // **************************************************
             if (ProgramMode <= 1) //Boot
             {
-                try //read screen resolution from registry
+                try //read screen resolution and other parameters from registry
                 {
                     reg = regHKLM.CreateSubKey(regHKLM__Project, true);
                     BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue(reg_ScreenWidth, "1920"));
                     BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue(reg_ScreenHright, "1080"));
+                    BGInfo.Info.hostName = (string)reg.GetValue(reg_HostName,null);
+                    BGInfo.Info.hostDescription = (string)reg.GetValue(reg_HostDescription, null);
                 }
                 catch (Exception e)
                 {
