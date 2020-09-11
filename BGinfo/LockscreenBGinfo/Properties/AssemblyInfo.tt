@@ -3,7 +3,18 @@
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text.RegularExpressions" #>
 <#
-    
+
+//https://stackoverflow.com/questions/826777/how-to-have-an-auto-incrementing-version-number-visual-studio
+//"c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\TextTransform.exe" 
+//"c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\TextTransform.exe" -a !!build!true "$(ProjectDir)Properties\AssemblyInfo.tt"
+
+    int incRevision = 1;
+    int incBuild = 1;
+	Console.WriteLine("*************************************************************");
+	Console.WriteLine("*           Version inc gen                                  ");
+	Console.WriteLine("*************************************************************");
+    try { incRevision = Convert.ToInt32(this.Host.ResolveParameterValue("","","Debug"));} catch( Exception ) { incBuild=0; }
+    try { incBuild = Convert.ToInt32(this.Host.ResolveParameterValue("","","Release")); } catch( Exception ) { incRevision=0; }
     string output = File.ReadAllText(this.Host.ResolvePath("AssemblyInfo.cs"));
     Regex pattern = new Regex("AssemblyVersion\\(\"(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<build>\\d+)\\.(?<revision>\\d+)\"\\)");
     MatchCollection matches = pattern.Matches(output);	
@@ -11,12 +22,12 @@
     {		
         major = Convert.ToInt32(matches[0].Groups["major"].Value);
         minor = Convert.ToInt32(matches[0].Groups["minor"].Value);
-        build = Convert.ToInt32(matches[0].Groups["build"].Value) + 1;
-        revision = Convert.ToInt32(matches[0].Groups["revision"].Value);
+        build = Convert.ToInt32(matches[0].Groups["build"].Value) + incBuild;
+        revision = Convert.ToInt32(matches[0].Groups["revision"].Value)+incRevision;
         if( this.Host.ResolveParameterValue("-","-","BuildConfiguration") == "Release" )
             revision++;
     }
-	
+	Console.WriteLine("*************************************************************");
 #>
 
 using System.Reflection;
@@ -25,9 +36,13 @@ using System.Runtime.InteropServices;
 using System.Resources;
 
 // General Information
+#if DEBUG
+[assembly: AssemblyConfiguration("Debug")]
+#else
+[assembly: AssemblyConfiguration("Release")]
+#endif
 [assembly: AssemblyTitle("LockScreenBGInfo")]
 [assembly: AssemblyDescription("Set image for Windows  lockscreen for all users")]
-[assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("BGInfo")]
 [assembly: AssemblyCopyright("Skorik (c) 2020")]
