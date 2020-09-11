@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 //using System.Net;
 //using System.Net.Sockets;
 using Microsoft.Win32;
@@ -17,13 +18,13 @@ namespace LockscreenBGInfo
         //[STAThread]
         static String ErrorTxt;
         static String ScriptName;
+        static String ScriptVersion;
         const String ProjectName = "BGInfo";
         const String reg_ScreenWidth = "ScreenWidth";
         const String reg_ScreenHright = "ScreenHeight";
         const String reg_HostName = "Hostname";
         const String reg_HostDescription = "Description";
         const String reg_BGInfoversion = "version";
-
         static void ShowMessage() { ShowMessage(ErrorTxt); }
         static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
         static void LogError() { LogError(ErrorTxt); }
@@ -104,7 +105,11 @@ namespace LockscreenBGInfo
                 BGInfo.Info.hostDescription = ((string)reg.GetValue("srvcomment", ""));
             }         
             catch (Exception e){ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;}
-
+            //get version
+            //ScriptVersion
+            Version v=  System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            ScriptVersion = v.Major.ToString();
+            ScriptVersion = v.Major.ToString();
             // **************************************************
             // Installation
             // **************************************************
@@ -221,7 +226,8 @@ namespace LockscreenBGInfo
                 //int ScreenHeight = SystemInformation.PrimaryMonitorMaximizedWindowSize.Height;
                 //int ScreenWidth = SystemInformation.PrimaryMonitorMaximizedWindowSize.Width;
                 BGInfo.Info.ScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
-                BGInfo.Info.ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
+                BGInfo.Info.ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;                
+                
                 try
                 {
                     reg = regHKLM.CreateSubKey(regHKLM__Project, true);
