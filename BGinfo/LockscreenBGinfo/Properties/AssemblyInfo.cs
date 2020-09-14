@@ -3,13 +3,20 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Resources;
+using System;
+using System.IO;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Text;
 
-// General Information
+
 #if DEBUG
-[assembly: AssemblyConfiguration("Debug")]
+[assembly: AssemblyConfiguration("DEBUG")]
 #else
 [assembly: AssemblyConfiguration("Release")]
 #endif
+
+// General Information
 [assembly: AssemblyTitle("LockScreenBGInfo")]
 [assembly: AssemblyDescription("Set image for Windows  lockscreen for all users")]
 [assembly: AssemblyCompany("")]
@@ -19,7 +26,7 @@ using System.Resources;
 [assembly: AssemblyCulture("")]
 
 // Version informationr(
-[assembly: AssemblyVersion("1.0.6.0")]
-[assembly: AssemblyFileVersion("1.0.6.0")]
-[assembly: NeutralResourcesLanguageAttribute( "en-US" )]
+[assembly: AssemblyVersion("1.1.4.0")]
+[assembly: AssemblyFileVersion("1.1.4.0")]
+
 
