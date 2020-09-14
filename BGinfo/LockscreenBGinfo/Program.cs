@@ -16,33 +16,13 @@ namespace LockscreenBGInfo
     class Program
     {
         //[STAThread]
-        static String ErrorTxt;
-        static String ScriptName;
-        static String ScriptVersion;
-        const String ProjectName = "BGInfo";
-        const String reg_ScreenWidth = "ScreenWidth";
-        const String reg_ScreenHright = "ScreenHeight";
-        const String reg_HostName = "Hostname";
-        const String reg_HostDescription = "Description";
-        const String reg_BGInfoversion = "version";
-        static void ShowMessage() { ShowMessage(ErrorTxt); }
-        static void ShowMessage(string Text) { MessageBox.Show(Text, ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
-        static void LogError() { LogError(ErrorTxt); }
-        static void LogError(string Text)
-        {
-            const string LogName = "Application";
-            try
-            {
-                if (!EventLog.SourceExists(ScriptName))
-                    EventLog.CreateEventSource(ScriptName, LogName);
-                using (EventLog eventLog = new EventLog(LogName))
-                {
-                    eventLog.Source = ScriptName;
-                    eventLog.WriteEntry(Text, EventLogEntryType.Error);
-                }
-            }
-            catch { }
-        }
+        
+        //static String ScriptName;
+        //static String ScriptVersion;
+              
+        static void ShowMessage() { ShowMessage(Log.ErrorTxt); }
+        static void ShowMessage(string Text) { MessageBox.Show(Text, BGInfo.Info.ProjectName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        
         /// <summary>
         /// 
         /// </summary>
@@ -50,17 +30,13 @@ namespace LockscreenBGInfo
         {
             if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;
             String ScriptFullPathName = Application.ExecutablePath;
-            ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
-            Process[] SelfProc = Process.GetProcessesByName(ScriptName);
+            Log.ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
+            Process[] SelfProc = Process.GetProcessesByName(Log.ScriptName);
             if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting			
-            String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
-            RegistryKey reg;
+            String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);            
             String FolderOOBEBGImage = Environment.GetEnvironmentVariable("windir") + @"\System32\oobe\info\backgrounds\";
             string LockScreenImage = "LockScreenImage.jpg";
-            const string DesktopScriptName = "DeskTopBGInfo.exe";
-            const String regHKLM__CSPKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP\";
-            const String regHKLM__Run = @"Software\Microsoft\Windows\CurrentVersion\Run\";
-            String regHKLM__Project = @"Software\" + ProjectName;
+            const string DesktopScriptName = "DeskTopBGInfo.exe";            
             String FileWallpaper;
             //SystemInformation.UserInteractive Значение true, если текущий процесс выполняется в интерактивном режиме. В противном случае — значение false.
             //SystemInformation.TerminalServerSession Значение true, если вызывающий процесс сопоставлен с клиентским сеансом служб терминалов. В противном случае — значение false.
@@ -79,8 +55,6 @@ namespace LockscreenBGInfo
                 ProgramMode = 0;// install
             else
                 return;
-            RegistryKey regHKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-
             //https://stackoverflow.com/questions/2819934/detect-windows-version-in-net
             //OperatingSystem os = Environment.OSVersion;
             //if (os.Version.Major != 10)
@@ -90,26 +64,20 @@ namespace LockscreenBGInfo
             //        return;
             //    #endif
             //}
-            try // Get hostname
+
+            if (!BGInfo.Info.GetInfo())
             {
-                //BGInfo.Info.hostName = Dns.GetHostName().ToUpper();
-                BGInfo.Info.hostName = Environment.GetEnvironmentVariable("COMPUTERNAME");
-            }
-            /*catch (SocketException e)
-            {
-                ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;
-            }*/
-            catch (Exception e){ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;}
+                Log.ErrorTxt = BGInfo.Info.LastError.Source + " " + BGInfo.Info.LastError.Message; 
+                if (ProgramMode == 0) ShowMessage(); else Log.LogError(); return;
+            }      
             try {//Get Host description   HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters   srvcomment             
                 reg = regHKLM.CreateSubKey(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", true);
                 BGInfo.Info.hostDescription = ((string)reg.GetValue("srvcomment", ""));
             }         
             catch (Exception e){ErrorTxt = e.Source + " " + e.Message; if (ProgramMode == 0) ShowMessage(); else LogError(); return;}
-            //get version
-            //ScriptVersion
+            //get version            
             Version v=  System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            ScriptVersion = v.Major.ToString();
-            ScriptVersion = v.Major.ToString();
+            BGInfo.Info.BGInfoVersion = v.Major.ToString()+"."+ v.Major.ToString() + "." + v.Build.ToString();
             // **************************************************
             // Installation
             // **************************************************
@@ -231,14 +199,16 @@ namespace LockscreenBGInfo
                 try
                 {
                     reg = regHKLM.CreateSubKey(regHKLM__Project, true);
-                    reg.SetValue(reg_ScreenWidth, BGInfo.Info.ScreenWidth, RegistryValueKind.String);
-                    if (reg.GetValue(reg_ScreenWidth) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
-                    reg.SetValue(reg_ScreenHright, BGInfo.Info.ScreenHeight, RegistryValueKind.String);
-                    if (reg.GetValue(reg_ScreenHright) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
-                    reg.SetValue(reg_HostName, BGInfo.Info.hostName, RegistryValueKind.String);
-                    if (reg.GetValue(reg_HostName) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
-                    reg.SetValue(reg_HostDescription, BGInfo.Info.hostDescription, RegistryValueKind.String);
-                    if (reg.GetValue(reg_HostDescription) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(BGInfo.Info.reg_ScreenWidth, BGInfo.Info.ScreenWidth, RegistryValueKind.String);
+                    if (reg.GetValue(BGInfo.Info.reg_ScreenWidth) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(BGInfo.Info.reg_ScreenHright, BGInfo.Info.ScreenHeight, RegistryValueKind.String);
+                    if (reg.GetValue(BGInfo.Info.reg_ScreenHright) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(BGInfo.Info.reg_HostName, BGInfo.Info.hostName, RegistryValueKind.String);
+                    if (reg.GetValue(BGInfo.Info.reg_HostName) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(BGInfo.Info.reg_HostDescription, BGInfo.Info.hostDescription, RegistryValueKind.String);
+                    if (reg.GetValue(BGInfo.Info.reg_HostDescription) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
+                    reg.SetValue(BGInfo.Info.reg_BGInfoVersion, BGInfo.Info.BGInfoVersion, RegistryValueKind.String);
+                    if (reg.GetValue(BGInfo.Info.reg_BGInfoVersion) == null) { ErrorTxt = "Запись в реестр не удалась\n" + reg.Name; ShowMessage(); return; }
                 }
                 catch (Exception e)
                 {
@@ -257,10 +227,11 @@ namespace LockscreenBGInfo
                 try //read screen resolution and other parameters from registry
                 {
                     reg = regHKLM.CreateSubKey(regHKLM__Project, true);
-                    BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue(reg_ScreenWidth, "1920"));
-                    BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue(reg_ScreenHright, "1080"));
-                    BGInfo.Info.hostName = (string)reg.GetValue(reg_HostName,null);
-                    BGInfo.Info.hostDescription = (string)reg.GetValue(reg_HostDescription, null);
+                    BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue(BGInfo.Info.reg_ScreenWidth, "1920"));
+                    BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue(BGInfo.Info.reg_ScreenHright, "1080"));
+                    /*BGInfo.Info.hostName = (string)reg.GetValue(BGInfo.Info.reg_HostName,null);
+                    BGInfo.Info.hostDescription = (string)reg.GetValue(BGInfo.Info.reg_HostDescription, null);
+                    BGInfo.Info.BGInfoVersion = (string)reg.GetValue(BGInfo.Info.reg_BGInfoVersion, null);*/
                 }
                 catch (Exception e)
                 {
@@ -277,6 +248,9 @@ namespace LockscreenBGInfo
                 FileWallpaper = FolderOOBEBGImage + BGInfo.Info.hostName + "-" + BGInfo.Info.ScreenWidth + "x" + BGInfo.Info.ScreenHeight + ".jpg";
                 // Generate name for wallpaper file
                 //
+                bool NeedRecreate = false;
+                NeedRecreate = (!File.Exists(FileWallpaper) || ProgramMode == 0);
+
 #if DEBUG
                 if (true)
 #else

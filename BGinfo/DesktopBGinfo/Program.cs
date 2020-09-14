@@ -14,8 +14,7 @@ namespace DesktopBGinfo
         //[STAThread]
         //static String ErrorTxt;
         static String ScriptName;                
-        const String ProjectName = "BGInfo";
-        
+        const String ProjectName = "BGInfo";        
         static void LogError(string Text)
         {
             const string LogName = "Application";
