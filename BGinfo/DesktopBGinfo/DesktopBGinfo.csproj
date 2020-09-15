@@ -50,4 +50,7 @@
   </ItemGroup>
   <Import Project="..\BGInfo\BGInfo.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>"$(MSBuildStartupDirectory)\TextTransform.exe" -a !!build!true "$(ProjectDir)Properties\AssemblyInfo.tt"</PreBuildEvent>
+  </PropertyGroup>
 </Project>

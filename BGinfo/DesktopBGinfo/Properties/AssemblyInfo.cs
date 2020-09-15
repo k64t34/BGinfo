@@ -17,8 +17,8 @@ using System.Text;
 #endif
 
 // General Information
-[assembly: AssemblyTitle("LockScreenBGInfo")]
-[assembly: AssemblyDescription("Set image for Windows  lockscreen for all users")]
+[assembly: AssemblyTitle("DeskTopBGInfo")]
+[assembly: AssemblyDescription("Set text info over wallpaprer for all users")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("BGInfo")]
 [assembly: AssemblyCopyright("Skorik (c) 2020")]
@@ -26,7 +26,7 @@ using System.Text;
 [assembly: AssemblyCulture("")]
 
 // Version informationr(
-[assembly: AssemblyVersion("1.1.38.0")]
-[assembly: AssemblyFileVersion("1.1.38.0")]
+[assembly: AssemblyVersion("1.1.11.0")]
+[assembly: AssemblyFileVersion("1.1.11.0")]
 
 

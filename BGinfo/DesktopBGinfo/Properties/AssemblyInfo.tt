@@ -47,8 +47,8 @@ using System.Text;
 #endif
 
 // General Information
-[assembly: AssemblyTitle("LockScreenBGInfo")]
-[assembly: AssemblyDescription("Set image for Windows  lockscreen for all users")]
+[assembly: AssemblyTitle("DeskTopBGInfo")]
+[assembly: AssemblyDescription("Set text info over wallpaprer for all users")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("BGInfo")]
 [assembly: AssemblyCopyright("Skorik (c) 2020")]
