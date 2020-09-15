@@ -45,7 +45,7 @@ namespace DesktopBGinfo
             if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting            
             String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
             RegistryKey reg;
-            String FileWallpaper;
+            //String FileWallpaper;
             string regHKLM__Project = @"Software\" + ProjectName;            
             const String reg_ScreenWidth = "ScreenWidth";
             const String reg_ScreenHright = "ScreenHeight";
