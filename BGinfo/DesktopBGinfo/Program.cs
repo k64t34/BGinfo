@@ -44,6 +44,7 @@ namespace DesktopBGinfo
             Process[] SelfProc = Process.GetProcessesByName(ScriptName);
             if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting            
             String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
+            //TODO: Проверить запущенность explorer
             RegistryKey reg;
             //String FileWallpaper;
             string regHKLM__Project = @"Software\" + ProjectName;            
