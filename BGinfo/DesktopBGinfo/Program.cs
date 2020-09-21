@@ -6,70 +6,63 @@ using System.Diagnostics;
 using System.Drawing;
 using BGInfo;
 using System.Security;
+using System.Windows;
 
 namespace DesktopBGinfo
 {
     class Program
-    {
-        //[STAThread]
-        //static String ErrorTxt;
-        static String ScriptName;                
-        const String ProjectName = "BGInfo";        
-        static void LogError(string Text)
-        {
-            const string LogName = "Application";
-            try
-            {
-                if (!EventLog.SourceExists(ScriptName))
-                    EventLog.CreateEventSource(ScriptName, LogName);
-                using (EventLog eventLog = new EventLog(LogName))
-                {
-                    eventLog.Source = ScriptName;
-                    eventLog.WriteEntry(Text, EventLogEntryType.Error);
-                }
-            }
-            catch { }
-        }
+    {   
         /// <summary>
-        /// 
+        /// D E S K  T O P    BG    I N F O 
         /// </summary>
         static void Main()
         {
             if (SystemInformation.BootMode != 0/*Normal boot mode must equil zerro*/) return;            
             String ScriptFullPathName = Application.ExecutablePath;
-            ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
+            Log.ScriptName = Path.GetFileNameWithoutExtension(ScriptFullPathName);
             #if DEBUG
-            LogError("Start debug" + ((DateTime)(DateTime.Now)).ToString());
+            Log.LogError("Start debug" + ((DateTime)(DateTime.Now)).ToString());
             #endif
-            Process[] SelfProc = Process.GetProcessesByName(ScriptName);
+            Process[] SelfProc = Process.GetProcessesByName(Log.ScriptName);
             if (SelfProc.Length > 1) return; // if current exist running the same instance of program, then exiting            
-            String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);
             //TODO: Проверить запущенность explorer
+            String ScriptFolder = Path.GetDirectoryName(ScriptFullPathName);            
+            //Read current wallpaprer style
+            const String regHKCU__DESKTOP = @"Control Panel\Desktop";
+            const String regHKCU__COLORS =  @"Control Panel\Colors";
+            String FileWallpaprer,Colors_Background;
+            int TileWallpaper, WallpaperStyle;
             RegistryKey reg;
-            //String FileWallpaper;
-            string regHKLM__Project = @"Software\" + ProjectName;            
-            const String reg_ScreenWidth = "ScreenWidth";
-            const String reg_ScreenHright = "ScreenHeight";
-            int currentScreenHeight, currentScreenWidth;
-            currentScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
-            currentScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
-            //read screen resolution from registry
-            RegistryKey regHKLM;            
-                try
-                {
-                    regHKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-                    reg = regHKLM.CreateSubKey(regHKLM__Project, true);
-                    BGInfo.Info.ScreenWidth = Int32.Parse((string)reg.GetValue(reg_ScreenWidth, "1920"));
-                    BGInfo.Info.ScreenHeight = Int32.Parse((string)reg.GetValue(reg_ScreenHright, "1080"));
+            try
+            {
+                RegistryKey regHKCU = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+                reg = regHKCU.OpenSubKey/*CreateSubKey*/(regHKCU__DESKTOP, true);
+                FileWallpaprer = ((string)reg.GetValue("WallPaper", ""));
+                TileWallpaper = Int32.Parse((string)reg.GetValue("TileWallpaper", "0"));
+                WallpaperStyle = Int32.Parse((string)reg.GetValue("WallpaperStyle", "0"));
+                reg = regHKCU.CreateSubKey(regHKCU__COLORS, true);
+                Colors_Background = ((string)reg.GetValue("Background", "0 0 0"));
+
+            }
+            catch (Exception e) { Log.LogError(e.ToString());return; }
+            
+            BGInfo.Info.GetCurrentScreenResolution();
+            //Center
+            if (WallpaperStyle == 0 && TileWallpaper == 0 && !String.IsNullOrEmpty(FileWallpaprer))if (File.Exists(FileWallpaprer))
+            {
+                //String FolderTranscode= Environment.GetEnvironmentVariable("APPDATA")+ @"\Microsoft\Windows\Themes\";
+                String FileTranscodedWallpaper = Path.Combine(Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\", "TranscodedWallpaper");
+                //Создать файл;
+                    BGInfo.Wallpaper.BGImageFile = FileWallpaprer;
+                    BGInfo.Wallpaper.BGImageAlign_H = 0;
+                    BGInfo.Wallpaper.BGImageAlign_V = 0;                    
+                    int[] BGrgb=Array.ConvertAll(Colors_Background.Split(' '), int.Parse);
+                    BGInfo.Wallpaper.BGColor= System.Drawing.Color.FromArgb(BGrgb[0], BGrgb[1], BGrgb[2]);
+                    if (!BGInfo.Wallpaper.Create(FileTranscodedWallpaper)) { Log.LogError("Не удалось создать новый файл обоев"); return; }
                 }
-                catch (Exception e) { LogError(e.ToString()); return; }
-                try
-                {
-                    if (currentScreenWidth != BGInfo.Info.ScreenWidth) reg.SetValue(reg_ScreenWidth, currentScreenWidth, RegistryValueKind.String);
-                    if (currentScreenHeight != BGInfo.Info.ScreenHeight) reg.SetValue(reg_ScreenHright, currentScreenHeight, RegistryValueKind.String);
-                }
-                catch (Exception e) { LogError(e.ToString()); }
-                finally { reg.Dispose(); }
+
+
+
             //Windows 10 -%APPDATA%\Roaming\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg 
             //Windows7  - C:\Users\<Username>\AppData\Roaming\Microsoft\Windows\Themes\TranscodedWallpaper.jpg
             //APPDATA=C:\Users\<Username>\AppData\Roaming
@@ -117,8 +110,8 @@ namespace DesktopBGinfo
             /*How to set wallpaper JPEG quality reduction in Windows 10 ( default 85)
 HKEY_CURRENT_USER\Control Panel\Desktop
 Create a new 32-bit DWORD value here called JPEGImportQuality*/
-            #if DEBUG
-            LogError("Finish debug" + ((DateTime)(DateTime.Now)).ToString());
+#if DEBUG
+            Log.LogError("Finish debug" + ((DateTime)(DateTime.Now)).ToString());
             #endif
         }
     }

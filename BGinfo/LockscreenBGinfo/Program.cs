@@ -212,12 +212,12 @@ namespace LockscreenBGInfo
                     bool resultBGImage = false;
                     if (File.Exists(LockScreenImage))
                     {
-                        resultBGImage = BGInfo.Image.Copy(LockScreenImage, FileWallpaper);
+                        resultBGImage = BGInfo.Wallpaper.Copy(LockScreenImage, FileWallpaper);
                     }
                     else
                     {
                         //if wallpaper  пусто, то взять какой цвет заливки HKEY_CURRENT_USER\Control Panel\Colors\Background  reg_sz 216 81 113
-                        resultBGImage = BGInfo.Image.Create(FileWallpaper);
+                        resultBGImage = BGInfo.Wallpaper.Create(FileWallpaper);
                     }
                     if (!resultBGImage) { Log.ErrorTxt = "Ну удалось создать новый файл изображения\n" + FileWallpaper + "\n" + Log.ErrorTxt; if (ProgramMode == 0) ShowMessage(); else Log.LogError(); return; }
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.Windows.Forms;
 namespace BGInfo
 
 {
@@ -27,6 +28,7 @@ namespace BGInfo
     }
     public class Info
     {
+        
         public static String hostName;
         public const String reg_HostName = "Hostname";
         public static String hostDescription;
@@ -162,6 +164,11 @@ namespace BGInfo
             }
             catch (Exception e) { LastError = e; result=false; }
             return result;        
+        }
+        static public void GetCurrentScreenResolution()
+        {
+            ScreenHeight = SystemInformation.PrimaryMonitorSize.Height;
+            ScreenWidth = SystemInformation.PrimaryMonitorSize.Width;
         }
     }
 }
