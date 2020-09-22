@@ -47,23 +47,27 @@ namespace BGInfo
                 srcimg = System.Drawing.Image.FromFile(BGImageFile);
                 BGImageFile_Width = srcimg.Width; BGImageFile_Height = srcimg.Height;
                 int Margin_Left = 0, Margin_Top = 0;
-                int Skip_left = 0, Skip_right = 0;
-                int srcImgWidth = BGImageFile_Width, srcImgHeight = BGImageFile_Height;
+                int Skip_left = 0, Skip_top = 0;
+                int srcImgCopyWidth = BGImageFile_Width, srcImgCopyHeight = BGImageFile_Height;
                 //TODO: remake over diff fld
                 if (BGImageFile_Width < BGInfo.Info.ScreenWidth) Margin_Left = Convert.ToInt32(Math.Floor((double)(BGInfo.Info.ScreenWidth - BGImageFile_Width) / 2.0));
                 else if (BGImageFile_Width > BGInfo.Info.ScreenWidth)
                 {
                     Skip_left = Convert.ToInt32(Math.Floor((double)(BGImageFile_Width - BGInfo.Info.ScreenWidth) / 2.0));
-                    srcImgWidth = BGImageFile_Width - Skip_left - Skip_left;
+                    srcImgCopyWidth = BGImageFile_Width - Skip_left - Skip_left;
                 }
                 if (BGImageFile_Height < BGInfo.Info.ScreenHeight) Margin_Top = Convert.ToInt32(Math.Floor((double)(BGInfo.Info.ScreenHeight - BGImageFile_Height) / 2.0));
                 else if (BGImageFile_Height > BGInfo.Info.ScreenHeight) Skip_left = Convert.ToInt32(Math.Floor((double)(BGImageFile_Height - BGInfo.Info.ScreenHeight) / 2.0));
 
-                GraphicsUnit units = GraphicsUnit.Point;
-                graphics.DrawImage(srcimg, Margin_Left, Margin_Top, new Rectangle(Skip_left, Skip_right, srcImgWidth, srcImgHeight), units);
-            }
-            Save(ImageFile, Img);
+                GraphicsUnit units = GraphicsUnit.Pixel;                
+                graphics.DrawImage(srcimg, new Rectangle(Margin_Left, Margin_Top, srcImgCopyWidth, srcImgCopyHeight), Skip_left, Skip_top, srcImgCopyWidth, srcImgCopyHeight, units);
+                srcimg.Dispose();
 
+            }
+            Info.GetInfo();            
+            if (BGImage(graphics)) result = Save(ImageFile, Img);
+            Img.Dispose();
+            graphics.Dispose();
 
             /*                try { Img = new Bitmap(BGImageFile); } catch (Exception e) { Log.LogError(e.ToString()); return false; }
                         else
