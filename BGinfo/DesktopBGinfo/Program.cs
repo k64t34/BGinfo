@@ -8,6 +8,7 @@ using BGInfo;
 using System.Security;
 using System.Windows;
 
+
 namespace DesktopBGinfo
 {
     class Program
@@ -139,7 +140,27 @@ Create a new 32-bit DWORD value here called JPEGImportQuality*/
                 if (reg.GetValue(reg_FileWallpaprer) == null) throw new Exception(BGInfo.Info.__ERR1_fail_write_registry + reg.Name);
             }
             catch (Exception e) { Log.LogError(e.ToString()); return; }
+            //Delete cach            
+            string cachDirectory =  Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\CachedFiles";
+            if (Directory.Exists(cachDirectory))
+            {
+                var files =Directory.EnumerateFiles(cachDirectory);
+                foreach (string f in files)
+                {
+                    File.Delete(f);
+                }
+            }
 
+            //RUNDLL32.EXE USER32.DLL,UpdatePerUserSystemParameters 1, True
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+                    startInfo.CreateNoWindow = true;
+                    startInfo.UseShellExecute = false;                    
+                    startInfo.FileName = "RUNDLL32.EXE";
+                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    startInfo.Arguments = "USER32.DLL,UpdatePerUserSystemParameters 1, True";
+            Process exeProcess ;
+                    try{exeProcess = Process.Start(startInfo);}
+                    catch (Exception e) { Log.LogError(e.ToString());}
 
 #if DEBUG
             Log.LogError("Finish debug" + ((DateTime)(DateTime.Now)).ToString());

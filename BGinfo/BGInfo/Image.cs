@@ -106,7 +106,7 @@ namespace BGInfo
 
             //Copy source background image to new image
             GraphicsUnit units = GraphicsUnit.Pixel;
-            Graphics.DrawImage(SrcImgFile,SrcRectangle, newRectangle, units);
+            Graphics.DrawImage(SrcImgFile,newRectangle,SrcRectangle, units); //https://docs.microsoft.com/ru-ru/dotnet/api/system.drawing.graphics.drawimage?view=dotnet-plat-ext-3.1#System_Drawing_Graphics_DrawImage_System_Drawing_Image_System_Drawing_RectangleF_System_Drawing_RectangleF_System_Drawing_GraphicsUnit_
             //Print background text and save file
             Info.GetInfo();            
             if (BGImage(Graphics)) result = Save(ImageFile, NewImg);
