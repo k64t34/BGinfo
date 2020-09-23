@@ -26,7 +26,7 @@ using System.Text;
 [assembly: AssemblyCulture("")]
 
 // Version informationr(
-[assembly: AssemblyVersion("1.1.65.0")]
-[assembly: AssemblyFileVersion("1.1.65.0")]
+[assembly: AssemblyVersion("1.1.82.0")]
+[assembly: AssemblyFileVersion("1.1.82.0")]
 
 

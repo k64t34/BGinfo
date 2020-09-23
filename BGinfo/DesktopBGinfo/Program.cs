@@ -30,37 +30,48 @@ namespace DesktopBGinfo
             //Read current wallpaprer style
             const String regHKCU__DESKTOP = @"Control Panel\Desktop";
             const String regHKCU__COLORS =  @"Control Panel\Colors";
-            String FileWallpaprer,Colors_Background;
+            const string reg_WallpaperStyle = "WallpaperStyle";
+            const string reg_TileWallpaper = "TileWallpaper";
+            const string reg_FileWallpaprer = "Wallpaper";
+            String Colors_Background;
             int TileWallpaper, WallpaperStyle;
             RegistryKey reg;
+            RegistryKey regHKCU;
             try
             {
-                RegistryKey regHKCU = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+                regHKCU = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
                 reg = regHKCU.OpenSubKey/*CreateSubKey*/(regHKCU__DESKTOP, true);
-                FileWallpaprer = ((string)reg.GetValue("WallPaper", ""));
-                TileWallpaper = Int32.Parse((string)reg.GetValue("TileWallpaper", "0"));
-                WallpaperStyle = Int32.Parse((string)reg.GetValue("WallpaperStyle", "0"));
+                BGInfo.Wallpaper.BGImageFile = ((string)reg.GetValue(reg_FileWallpaprer, ""));
+                TileWallpaper = Int32.Parse((string)reg.GetValue(reg_TileWallpaper, "0"));
+                WallpaperStyle = Int32.Parse((string)reg.GetValue(reg_WallpaperStyle, "0"));
                 reg = regHKCU.CreateSubKey(regHKCU__COLORS, true);
                 Colors_Background = ((string)reg.GetValue("Background", "0 0 0"));
 
             }
             catch (Exception e) { Log.LogError(e.ToString());return; }
-            
-            BGInfo.Info.GetCurrentScreenResolution();
-            //Center
-            if (WallpaperStyle == 0 && TileWallpaper == 0 && !String.IsNullOrEmpty(FileWallpaprer))if (File.Exists(FileWallpaprer))
-            {
-                //String FolderTranscode= Environment.GetEnvironmentVariable("APPDATA")+ @"\Microsoft\Windows\Themes\";
-                String FileTranscodedWallpaper = Path.Combine(Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\", "TranscodedWallpaper");
-                //Создать файл;
-                    BGInfo.Wallpaper.BGImageFile = FileWallpaprer;
-                    BGInfo.Wallpaper.BGImageAlign_H = 0;
-                    BGInfo.Wallpaper.BGImageAlign_V = 0;                    
-                    int[] BGrgb=Array.ConvertAll(Colors_Background.Split(' '), int.Parse);
-                    BGInfo.Wallpaper.BGColor= System.Drawing.Color.FromArgb(BGrgb[0], BGrgb[1], BGrgb[2]);
-                    if (!BGInfo.Wallpaper.Create(FileTranscodedWallpaper)) { Log.LogError("Не удалось создать новый файл обоев"); return; }
-                }
 
+            if /*COLOR*/(String.IsNullOrEmpty(BGInfo.Wallpaper.BGImageFile) || !File.Exists(BGInfo.Wallpaper.BGImageFile))            
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_COLOR;
+            else /*TILE*/if (TileWallpaper == 1)
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_TILE;
+            else /*CENTER*/if (WallpaperStyle == 0)
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_CENTER;
+            else /*STRETCH*/if (WallpaperStyle == 22)
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_STRETCH;
+            else /*SPAN*/if (WallpaperStyle == 2)
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_SPAN;
+            else /*FIT*/if (WallpaperStyle == 6)
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_FIT;
+            else /*FILL*/if (WallpaperStyle == 10)
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_FILL;
+            else
+                BGInfo.Wallpaper.Style = BGInfo.Wallpaper.s_FILL;
+
+            BGInfo.Info.GetCurrentScreenResolution();            
+            int[] BGrgb = Array.ConvertAll(Colors_Background.Split(' '), int.Parse);
+            BGInfo.Wallpaper.BGColor = System.Drawing.Color.FromArgb(BGrgb[0], BGrgb[1], BGrgb[2]);
+            String FileTranscodedWallpaper = Path.Combine(Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\", "TranscodedWallpaper");
+            if (!BGInfo.Wallpaper.Create(FileTranscodedWallpaper)) { Log.LogError("Не удалось создать новый файл обоев"); return; }
 
 
             //Windows 10 -%APPDATA%\Roaming\Microsoft\Windows\Themes\CachedFiles\CachedImage_1920_1080_POS4.jpg 
@@ -110,9 +121,29 @@ namespace DesktopBGinfo
             /*How to set wallpaper JPEG quality reduction in Windows 10 ( default 85)
 HKEY_CURRENT_USER\Control Panel\Desktop
 Create a new 32-bit DWORD value here called JPEGImportQuality*/
+
+            //Reset wallpaprer style to Fill
+            /*HKEY_CURRENT_USER\Control Panel\Desktop
+            Wallpaper if color then create tmp file and write path to Wallpaper 
+            TileWallpaper =0
+            WallpaperStyle =10*/
+            try
+            {
+                WallpaperStyle = 10;
+                reg = regHKCU.OpenSubKey/*CreateSubKey*/(regHKCU__DESKTOP, true);
+                reg.SetValue(reg_TileWallpaper, TileWallpaper, RegistryValueKind.String);
+                if (reg.GetValue(reg_TileWallpaper) == null) throw new Exception(BGInfo.Info.__ERR1_fail_write_registry + reg.Name);
+                reg.SetValue(reg_WallpaperStyle, WallpaperStyle, RegistryValueKind.String);
+                if (reg.GetValue(reg_WallpaperStyle) == null) throw new Exception(BGInfo.Info.__ERR1_fail_write_registry + reg.Name);
+                reg.SetValue(reg_FileWallpaprer, BGInfo.Wallpaper.BGImageFile, RegistryValueKind.String);
+                if (reg.GetValue(reg_FileWallpaprer) == null) throw new Exception(BGInfo.Info.__ERR1_fail_write_registry + reg.Name);
+            }
+            catch (Exception e) { Log.LogError(e.ToString()); return; }
+
+
 #if DEBUG
             Log.LogError("Finish debug" + ((DateTime)(DateTime.Now)).ToString());
-            #endif
+#endif
         }
     }
 }

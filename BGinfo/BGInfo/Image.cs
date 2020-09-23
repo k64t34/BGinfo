@@ -3,6 +3,8 @@ using System.IO;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Imaging;
+
+
 namespace BGInfo
 {
     public static class Wallpaper
@@ -10,6 +12,14 @@ namespace BGInfo
         static public String BGImageFile;
         static public Color  BGColor;
             static public int BGImageAlign_H=1, BGImageAlign_V=1; //H:0 - center, 1 - left, 2 - right , V: 0 -center, 1- Top, 2 - Bottom 
+        static public byte Style = 0;//0-color, 1-Center, 2-Tile, 3- Stretch, 4-Span, 5-Fit, 6-Fill
+        public const byte s_COLOR = 0;
+        public const byte s_CENTER = 1;
+        public const byte s_TILE = 2;
+        public const byte s_STRETCH = 3;
+        public const byte s_SPAN = 4;
+        public const byte s_FIT = 5;
+        public const byte s_FILL = 6;
         //static public int ScreenWidth=1920, ScreemHeight=1080;
         private static ImageCodecInfo GetEncoder(ImageFormat format)//https://docs.microsoft.com/ru-ru/dotnet/framework/winforms/advanced/how-to-set-jpeg-compression-level
         {
@@ -26,8 +36,95 @@ namespace BGInfo
         public static bool Create(string ImageFile) 
         {
             bool result = true;
+            Bitmap SrcImg ;
+            Graphics Graphics;
+            int Src_Width,Src_Height;
+            System.Drawing.Image SrcImgFile;
+            //Create custom source file if wallpaper style is COLOR
+            if (Wallpaper.Style == s_COLOR)
+            {
+                BGImageFile = Path.Combine(Environment.GetEnvironmentVariable("APPDATA") + @"\Microsoft\Windows\Themes\", "DesktopBGInfo.jpg");
+                SrcImg = new Bitmap(BGInfo.Info.ScreenWidth, BGInfo.Info.ScreenHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                Graphics = Graphics.FromImage(SrcImg);
+                Graphics.Clear(BGColor);
+                Save(BGImageFile, SrcImg);
+                Graphics.Dispose();
+                SrcImg.Dispose();
+            }
+            SrcImgFile = System.Drawing.Image.FromFile(BGImageFile);                
+            Src_Width = SrcImgFile.Width;
+            Src_Height = SrcImgFile.Height;
+            //Create new image 
+            Bitmap NewImg = new Bitmap(BGInfo.Info.ScreenWidth, BGInfo.Info.ScreenHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            Graphics = Graphics.FromImage(NewImg);
+            //Fill image with color 
+            if (Wallpaper.Style == s_FIT || Wallpaper.Style == s_CENTER) Graphics.Clear(BGColor);
+            //Calculate source rectangle 
+            Rectangle SrcRectangle= new Rectangle(0, 0, Src_Width, Src_Height);
+            Rectangle newRectangle=new Rectangle(0, 0, Info.ScreenWidth, Info.ScreenHeight);
+            if (Wallpaper.Style == s_CENTER)
+            {
+                if (Src_Width <= Info.ScreenWidth)
+                {
+                    //SrcRectangle.Width = Src_Width;
+                    newRectangle.X= Convert.ToInt32(Math.Floor((double)(Info.ScreenWidth - Src_Width) / 2.0));
+                    newRectangle.Width = Src_Width;
+                }
+                else
+                {                    
+                    SrcRectangle.X = Convert.ToInt32(Math.Floor((double)(Src_Width - Info.ScreenWidth  ) / 2.0));
+                    SrcRectangle.Width = Info.ScreenWidth;
+                    //newRectangle.Width = Info.ScreenWidth;
+                }
+                if (Src_Height <= Info.ScreenHeight)
+                {
+                    //SrcRectangle.Height = Src_Height;
+                    newRectangle.Y = Convert.ToInt32(Math.Floor((double)(Info.ScreenHeight - Src_Height) / 2.0));
+                    newRectangle.Height = Src_Height;
+                }
+                else
+                {
+                    SrcRectangle.Y = Convert.ToInt32(Math.Floor((double)(Src_Height - Info.ScreenHeight) / 2.0));
+                    SrcRectangle.Height = Info.ScreenHeight;
+                    //newRectangle.Height = Info.ScreenHeight;
+                }
+            }
+            else if (Wallpaper.Style == s_FILL) 
+            {
+
+            }
+            
+
+
+            //Calculate target rectangle            
+            if (/*Wallpaper.Style == s_CENTER || */Wallpaper.Style == s_FIT)
+            {
+                newRectangle = new Rectangle(0, 0, 0,0);
+            }
+            /*else
+                newRectangle = new Rectangle(0, 0, Info.ScreenWidth, Info.ScreenHeight);*/
+
+            //Copy source background image to new image
+            GraphicsUnit units = GraphicsUnit.Pixel;
+            Graphics.DrawImage(SrcImgFile,SrcRectangle, newRectangle, units);
+            //Print background text and save file
+            Info.GetInfo();            
+            if (BGImage(Graphics)) result = Save(ImageFile, NewImg);
+            NewImg.Dispose();
+            Graphics.Dispose();
+            SrcImgFile.Dispose();
+
+
+
+            /*
+
             int BGImageFile_Width,BGImageFile_Height;
-            System.Drawing.Image srcimg;
+
+
+
+
+            System.Drawing.Image SrcImg;
+
             if (File.Exists(BGImageFile)) try
                 {
                     srcimg = System.Drawing.Image.FromFile(BGImageFile);
@@ -41,7 +138,7 @@ namespace BGInfo
             graphics = Graphics.FromImage(Img);
             //TODO заполнить цветом \HKEY_CURRENT_USER\Control Panel\Colors backgroud или создавать сразу файл с цветом фона
             graphics.Clear(BGColor);
-
+            //Fill image with color
             if (!String.IsNullOrEmpty(BGImageFile)) 
             {
                 srcimg = System.Drawing.Image.FromFile(BGImageFile);
@@ -68,6 +165,7 @@ namespace BGInfo
             if (BGImage(graphics)) result = Save(ImageFile, Img);
             Img.Dispose();
             graphics.Dispose();
+            */
 
             /*                try { Img = new Bitmap(BGImageFile); } catch (Exception e) { Log.LogError(e.ToString()); return false; }
                         else
@@ -87,10 +185,7 @@ namespace BGInfo
             grD.DrawImage(srcBitmap, destRegion, srcRegion, GraphicsUnit.Pixel);                
         }
     }*/
-            //Graphics graphics;
-            //            graphics = Graphics.FromImage(Img);
-
-            //return Create(ImageFile, ColorTranslator.FromHtml("#FF004080")); 
+     
             return result;
         }
         public static bool Create(string ImageFile, Color BGColor)
