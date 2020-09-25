@@ -7,6 +7,7 @@ using System.Drawing;
 using BGInfo;
 using System.Security;
 using System.Windows;
+using System.Threading;
 
 
 namespace DesktopBGinfo
@@ -152,7 +153,9 @@ Create a new 32-bit DWORD value here called JPEGImportQuality*/
             }
 
             //RUNDLL32.EXE USER32.DLL,UpdatePerUserSystemParameters 1, True
-            ProcessStartInfo startInfo = new ProcessStartInfo();
+
+            Thread.Sleep(1000);
+                        ProcessStartInfo startInfo = new ProcessStartInfo();
                     startInfo.CreateNoWindow = true;
                     startInfo.UseShellExecute = false;                    
                     startInfo.FileName = "RUNDLL32.EXE";

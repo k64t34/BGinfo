@@ -91,7 +91,20 @@ namespace BGInfo
             }
             else if (Wallpaper.Style == s_FILL) 
             {
+                int Ph = Info.ScreenHeight * Src_Width;
+                int Pw = Info.ScreenWidth * Src_Height;
+                if (Pw < Ph)
+                {
+                    //SrcRectangle.Height = Src_Height;
+                    SrcRectangle.Width = Convert.ToInt32(Math.Floor((double)(Pw) / (double)Info.ScreenHeight));
+                    SrcRectangle.X= Convert.ToInt32(Math.Floor((double)(Src_Width - SrcRectangle.Width) / 2.0));
 
+                }
+                else if  (Pw > Ph)
+                {
+                    SrcRectangle.Height = Convert.ToInt32(Math.Floor((double)(Ph) / (double)Info.ScreenWidth));
+                    SrcRectangle.Y = Convert.ToInt32(Math.Floor((double)(Src_Height - SrcRectangle.Height) / 2.0));
+                }
             }
             
 
@@ -277,6 +290,22 @@ namespace BGInfo
             rect1 = new Rectangle(Info.ScreenWidth / 2, yPosText, (Info.ScreenWidth - xPosText) / 2, size.Height);
             flags = TextFormatFlags.HorizontalCenter;
             //https://docs.microsoft.com/en-us/dotnet/api/system.windows.forms.textrenderer.drawtext?view=netframework-4.8#System_Windows_Forms_TextRenderer_DrawText_System_Drawing_IDeviceContext_System_String_System_Drawing_Font_System_Drawing_Rectangle_System_Drawing_Color_System_Windows_Forms_TextFormatFlags_
+            rect1.X--;
+            rect1.Y--;
+            System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostDescription, font1, rect1,
+                    System.Drawing.Color.Black, flags);
+            rect1.X+=2;            
+            System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostDescription, font1, rect1,
+                    System.Drawing.Color.Black, flags);
+            rect1.Y+=2;
+            System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostDescription, font1, rect1,
+                    System.Drawing.Color.Black, flags);
+            rect1.X-= 2;
+            System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostDescription, font1, rect1,
+                    System.Drawing.Color.Black, flags);
+            rect1.X++;
+            rect1.Y++;            
+
             System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostDescription, font1, rect1,
                     System.Drawing.Color.LightGray, flags);
 
