@@ -1,40 +1,92 @@
-# BGinfo
+# SourceModCompilerHelper.2021
 ---
-Пока жалкое подобие программы BGinfo из пакета Sysinternals для Windows 10.
+RU:Помощник для компиляции SourceMod плагинов. 
+EN:Helper for compiling Sourcemod plugins
 
-Умеет отображать имя хоста на:
+1. Параметры коммандой строки запуска:
+MySMcompiler <path\file.sp>, где <path\file.sp> - имя файла с исходным кодом. 
 
-1. экране блокировки (приветсвия/ выбора пользователя/ ввода пароля);
-2. обоях пользователей.
-![Lock screen](https://github.com/k64t34/BGinfo/blob/master/FAQ/Example.LockScreen.jpg)
-![Lock screen](https://github.com/k64t34/BGinfo/blob/master/FAQ/Example.Desktoptop.jpg)
+2.Файловой структуры проекта плагина
+1. Только один файл.Т.е. в проекте используется только один файл в формате *.sp.
+2. Файловая структура проекта плагина имеет следующий формат:
+```sh
 
-## Состоит из двух программ:
-**LockscreenBGinfo.exe** - программа для экрана блокировки и по совместительсту установщик пакета.
+<git folder> 
+ ├── game<plugin_folder>       # `` например: dod,css,csgo
+    ├── addons
+       ├── sourcemod
+ └── mycmp.ini                 # `параметры компилятора`
+```
 
-**DesktopBGinfo.exe** - программа  для обоев пользователя.
+3. Конфигурация работы помощника
+Файл mycmp.ini 
+1. В папке с MySMcompiler.
+2. В корневой папке проекта плагина.
+```sh
+[Compiler]
+Compilator="spcomp.exe" 
+Compilator_Folder="..\smk64t\sourcemod-1.7.3-git5301\"
+Plugin_Author="Plugin_Author"
+;Parameters=
+Include=..\smk64t\scripting\include;..\smk64t\sourcemod-1.7.3-git5301\include;..\smk64t\smlib\scripting\include;
+;Always included:
+;sourcemod\include 
+;smK64t\scripting\include
+;smlib\scripting\include
 
-### Действия LockscreenBGinfo.exe при запуске из сессии пользователя с правами Администратора:
-1. Копирует себя (LockscreenBGinfo.exe), DesktopBGinfo.exe в папку \ProgramFiles\BGinfo;
-2. Копирует файлы логотипов LockScreenLogo.jpg и DeskTopLogo.jpg в папку \Windows\System32\oobe\info\backgrounds\
-3. Создает задание в планировщике Windows на запуск себя во время загрузки ОС;
-4. Создает в разделе реестра `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` параметр BGInfo REG_SZ \ProgramFiles\BGinfo\DesktopBGinfo.exe для запуска DesktopBGinfo.exe при входе каждого пользователя.
-5. Создает в разделе реестра `HKEY_LOCAL_MACHINE\SOFTWARE\` раздел BGInfo для хранения конфигурации программы.
-
-### Действия LockscreenBGinfo.exe при загрузки ОС:
-1. Создает файл для отображения на экране блокировки. Имя файла имеет формат
-
-`<Hostname>-<Screen width>x<Screen Height>.jpg`
+[Server]
+rcon_address=ip-address
+rcon_port=port
+rcon_password="password"
+SRCDS_Folder=path to folder in LAN
+SRCDS_FTP=path to game folder over ftp server
+```
 
 
-2. Изменяет в разделе реестра `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP` параметры:
 
-  LockScreenImagePath
+##Changelog 
+* Unreleased 
+- fix rcon bug
+* 1.0.5.3  
+-  Autoclose app 
+* 1.0.5.0  
+ - Added.двойные кавычки в пути -D.  
+* 1.0
 
-  LockScreenImageUrl
+Use hard datetime format in datetime.inc to prevent locale isses  like "Map_Elections" (╨Я╤В, 15.╨░╨┐╤А.2016 16:00:14) by KOM64T. 
+Установлен жесткий формат даты и времени для избежания проблем с форматом локализации.
 
-  LockScreenImageStatus
+Add parameter MapReload. If MapReload=true, then server will _restart after plugin copy to server. 
 
-### Действия DesktopBGinfo.exe:
-1. Находит кэш текущих обоев в папке и %APPDATA%\Microsoft\Windows\Themes\ (\Users<User name>\AppData\Roaming\Microsoft\Windows\Themes\ и добавляет имя хоста
-  
+В ini добавлен параметр MapReload. Если MapReload установить в true, то сервер будет перезагржен после копирования плагина на сервер.  
+
+Add show plugin info after restart plugin in server.
+
+* 0.3 1st Realese
+
+
+##Plans
+
+- [x] Удалять datetime.inc после компиляции
+- [ ] Добавить в INI пункт сохранять или удалаять .err
+- [ ] Добавить фильтр для исключения файлов для копирования на сервер
+- [ ] Распозонвание простой структуры плагина
+- [ ] need test  Наладить распознование абсолютных и относительных путей 
+- [ ] Отображать как абсольные так и относительные пути
+- [ ] Получать лог с сервера для слежения за плагинами 
+- [ ] Добавить консоль сервера
+- [x] При отсутствии действий в окне - закрыть через таймаут
+- 
+
+
+ 
+https://help.github.com/articles/basic-writing-and-formatting-syntax/
+http://keepachangelog.com/ru/
+Added для новых функций.
+Changed для изменений в существующей функциональности.
+Deprecated для функциональности, которая будет удалена в следующих версиях.
+Removed для функциональности, которая удалена в этой версии.
+Fixed для любых исправлений.
+Security 
+
+Usage: MySMcompiler <path\file.sp>
