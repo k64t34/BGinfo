@@ -281,6 +281,8 @@ namespace BGInfo
             //https://docs.microsoft.com/en-us/dotnet/api/system.windows.forms.textrenderer.drawtext?view=netframework-4.8#System_Windows_Forms_TextRenderer_DrawText_System_Drawing_IDeviceContext_System_String_System_Drawing_Font_System_Drawing_Rectangle_System_Drawing_Color_System_Windows_Forms_TextFormatFlags_
             System.Windows.Forms.TextRenderer.DrawText(graphics, Info.hostName, font1, rect1,
                     System.Drawing.Color.White, flags);
+
+            // Text effect https://www.graphicsmill.com/docs/gm5/DrawingTextwithEffects.htm
             //Draw hostDescription
             xPosText = 10;
             yPosText = 10 + rect1.Height;
